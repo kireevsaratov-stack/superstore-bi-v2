@@ -166,30 +166,36 @@ def delta_html(value, currency='$'):
     formatted = format_k(abs(value), currency) if abs(value) >= 1000 else f'{currency}{abs(value):,.0f}'
     return f'<span style="color:{color};background:{bg};padding:2px 8px;border-radius:4px;font-size:13px;">{arrow} {sign}{formatted}</span>'
 
-st.markdown(f"""
-<div class="year-summary">
-    <div class="year-stat">
-        <div class="label">Total Sales</div>
-        <div class="value">{format_k(sales_sum, currency)}</div>
-        {delta_html(sales_delta, currency)}
-    </div>
-    <div class="year-stat">
-        <div class="label">Total Profit</div>
-        <div class="value">{format_k(profit_sum, currency)}</div>
-        {delta_html(profit_delta, currency)}
-    </div>
-    <div class="year-stat">
-        <div class="label">Orders</div>
-        <div class="value">{orders:,}</div>
-        {delta_html(orders_delta, currency)}
-    </div>
-    <div class="year-stat">
-        <div class="label">Customers</div>
-        <div class="value">{customers:,}</div>
-        {delta_html(customers_delta, currency)}
-    </div>
-</div>
-""", unsafe_allow_html=True)
+html_parts = [
+    '<div class="year-summary">',
+    f'<div class="year-stat"><div class="label">Total Sales</div><div class="value">{format_k(sales_sum, currency)}</div>',
+]
+delta = delta_html(sales_delta, currency)
+if delta:
+    html_parts.append(delta)
+html_parts.append('</div>')
+
+html_parts.append(f'<div class="year-stat"><div class="label">Total Profit</div><div class="value">{format_k(profit_sum, currency)}</div>')
+delta = delta_html(profit_delta, currency)
+if delta:
+    html_parts.append(delta)
+html_parts.append('</div>')
+
+html_parts.append(f'<div class="year-stat"><div class="label">Orders</div><div class="value">{orders:,}</div>')
+delta = delta_html(orders_delta, currency)
+if delta:
+    html_parts.append(delta)
+html_parts.append('</div>')
+
+html_parts.append(f'<div class="year-stat"><div class="label">Customers</div><div class="value">{customers:,}</div>')
+delta = delta_html(customers_delta, currency)
+if delta:
+    html_parts.append(delta)
+html_parts.append('</div>')
+
+html_parts.append('</div>')
+
+st.markdown('\n'.join(html_parts), unsafe_allow_html=True)
 
 # =========================================================
 # monthly
