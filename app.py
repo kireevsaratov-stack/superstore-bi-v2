@@ -360,7 +360,7 @@ with col2:
     with st.container(border=True, key="plot6"):
         st.markdown('##### Топ-10 убыточных')
         l10 = df.groupby('Product Name')['Profit'].sum().nsmallest(10).reset_index()
-        t10['Product Name'] = t10['Product Name'].apply(lambda x: x[:25] + '...' if len(x) > 25 else x)
+        l10['Product Name'] = l10['Product Name'].apply(lambda x: x[:25] + '...' if len(x) > 25 else x)
         fig = px.bar(l10, x='Profit', y='Product Name', orientation='h', template=plotly_template,
                      color='Profit', color_continuous_scale='Reds_r', text_auto='.2s',
                      labels={'Profit': 'Прибыль', 'Product Name': ''})
@@ -369,7 +369,7 @@ with col2:
             xaxis=dict(range=[l10['Profit'].min() * 1.1, 0]),
             coloraxis_showscale=False,
             height=400,
-            margin=dict(l=200, r=20, t=20, b=20)
+            margin=dict(l=20, r=20, t=20, b=20)
         )
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 
