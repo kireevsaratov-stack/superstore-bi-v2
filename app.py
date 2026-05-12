@@ -23,7 +23,7 @@ st.markdown("""
     [data-testid="stSidebar"] { display: none !important; }
     .main .block-container { max-width: 1200px; padding-top: 20px; }
 
-    .main-header { font-size: 28px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px; }
+    .main-header { font-size: 36px; font-weight: 400; color: #1a1a1a; margin-bottom: 8px; }
     .main-subtitle { font-size: 14px; color: #6b7280; margin-bottom: 20px; }
 
     .year-summary { display: flex; gap: 40px; flex-wrap: wrap; margin: 16px 0; }
