@@ -176,8 +176,7 @@ else:
 
 
 def delta_html(value, currency=''):
-    if len(years) < 2:
-        return ''  # ← не показываем дельту если выбран 1 год
+    """Возвращает HTML с цветовой заливкой как в demo"""
     if value > 0:
         color = '#22c55e'
         bg = '#f0fdf4'
@@ -189,7 +188,10 @@ def delta_html(value, currency=''):
         arrow = '↓'
         sign = ''
     else:
-        return ''  # ← не показываем если 0
+        color = '#6b7280'
+        bg = '#f9fafb'
+        arrow = '→'
+        sign = ''
 
     formatted = format_k(abs(value), currency) if abs(value) >= 1000 else f'{currency}{abs(value):,.0f}'
     return f'<span style="color:{color};background:{bg};padding:2px 8px;border-radius:4px;font-size:13px;">{arrow} {sign}{formatted}</span>'
@@ -234,30 +236,13 @@ plotly_config = {'staticPlot': True, 'responsive': True, 'displayModeBar': False
 col1, col2 = st.columns(2)
 with col1:
     with st.container(border=True, key="plot1"):
-        st.markdown(f"""
-        <div class="year-summary">
-            <div class="year-stat">
-                <div class="label">Total Sales</div>
-                <div class="value">{format_k(sales_sum, currency)}</div>
-                {delta_html(sales_delta, currency) if len(years) >= 2 else ''}
-            </div>
-            <div class="year-stat">
-                <div class="label">Total Profit</div>
-                <div class="value">{format_k(profit_sum, currency)}</div>
-                {delta_html(profit_delta, currency) if len(years) >= 2 else ''}
-            </div>
-            <div class="year-stat">
-                <div class="label">Orders</div>
-                <div class="value">{orders:,}</div>
-                {delta_html(orders_delta) if len(years) >= 2 else ''}
-            </div>
-            <div class="year-stat">
-                <div class="label">Customers</div>
-                <div class="value">{customers:,}</div>
-                {delta_html(customers_delta) if len(years) >= 2 else ''}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown('##### Продажи и Прибыль по месяцам')
+        fig = go.Figure(layout=dict(template=plotly_template))
+        fig.add_trace(go.Scatter(x=monthly['Order Date'], y=monthly['Sales'], name='Продажи', fill='tozeroy'))
+        fig.add_trace(go.Scatter(x=monthly['Order Date'], y=monthly['Profit'], name='Прибыль', fill='tozeroy'))
+        fig.update_layout(height=400, hovermode='x unified', margin=dict(l=20, r=20, t=20, b=30),
+                          legend=dict(orientation='h', yanchor='top', y=-0.2, xanchor='center', x=0.5))
+        st.plotly_chart(fig, width='stretch', config=plotly_config)
 with col2:
     with st.container(border=True, key="plot2"):
         st.markdown('##### Sales distribution')
