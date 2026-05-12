@@ -381,15 +381,16 @@ with col1:
     with st.container(border=True, key="plot7"):
         st.markdown('##### Скидки vs Прибыль')
         dp = df.copy()
-        dp['DL'] = pd.cut(dp['Discount'], bins=[-0.01,0.05,0.2,0.5,1], labels=['Без скидки','0-5%','5-20%','20%+'])
+        dp['DL'] = pd.cut(dp['Discount'], bins=[-0.01, 0.05, 0.2, 0.5, 1], labels=['Без скидки','0-5%','5-20%','20%+'])
         fig = px.scatter(dp, x='Discount', y='Profit', color='Profit', template=plotly_template, opacity=0.7, color_continuous_scale=['red','yellow','green'])
         fig.update_traces(selector=dict(mode='markers'), marker=dict(size=15, coloraxis='coloraxis'))
         fig.add_hline(y=0, line_dash="dash", line_color="black", opacity=0.5)
         fig.update_layout(
-            yaxis={'categoryorder': 'total ascending'},
             height=400,
+            xaxis=dict(title='Скидка %', tickformat='.0%', range=[-0.05, 0.85]),
+            yaxis=dict(title='Прибыль'),
             coloraxis_showscale=False,
-            margin=dict(l=20, r=80, t=20, b=20)  # ← r=80 увеличено
+            margin=dict(l=20, r=20, t=20, b=20)
         )
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 with col2:
