@@ -124,12 +124,11 @@ df_raw = load_data()
 # HEADER
 # =========================================================
 st.markdown('<div class="main-header">Superstore Sales</div>', unsafe_allow_html=True)
-st.markdown('<div class="main-subtitle">Let\'s explore the classic Superstore dataset!</div>', unsafe_allow_html=True)
 
 # =========================================================
 # TOP BAR
 # =========================================================
-st.markdown('<div class="top-bar">', unsafe_allow_html=True)
+
 c1, c2 = st.columns([3, 1])
 with c1:
     st.markdown("**Compare different years**")
@@ -138,7 +137,7 @@ with c1:
                      label_visibility="collapsed")
 with c2:
     show_rub = st.toggle("🇷🇺 RUB", value=False)
-st.markdown('</div>', unsafe_allow_html=True)
+
 
 df = df_raw.copy()
 if years: df = df[df['Year'].isin(years)]
@@ -165,7 +164,6 @@ st.markdown(f"""
 
 avg_discount = df['Discount'].mean() * 100
 avg_delivery = df['Processing Days'].mean()
-st.markdown(f'Most common discount: **{avg_discount:.1f}%** · Avg delivery: **{avg_delivery:.1f} days**')
 
 # =========================================================
 # monthly
