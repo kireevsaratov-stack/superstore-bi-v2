@@ -222,15 +222,27 @@ with col2:
     with st.container(border=True, key="plot2"):
         st.markdown('##### Sales distribution')
         cat = df.groupby('Category').agg(Sales=('Sales', 'sum')).reset_index()
+        # Цвета как на картинке
+        colors = ['#636EFA', '#00CC96', '#EF553B']  # синий, зелёный, красный
         fig = go.Figure()
         fig.add_trace(go.Pie(
             labels=cat['Category'], values=cat['Sales'],
-            hole=0.6, textinfo='label+percent',
+            hole=0.4,
+            textinfo='label+percent',
             texttemplate='%{label}<br>%{percent:.1%}',
-            marker=dict(colors=px.colors.qualitative.Pastel[:3], line=dict(color='white', width=2)),
-            textfont=dict(size=14), sort=False
+            marker=dict(colors=colors, line=dict(color='white', width=3)),
+            textfont=dict(size=14),
+            sort=False,
+            direction='clockwise',
+            rotation=90
         ))
-        fig.update_layout(height=400, margin=dict(l=20, r=20, t=20, b=20), showlegend=False)
+        fig.update_layout(
+            height=400,
+            margin=dict(l=20, r=20, t=20, b=20),
+            showlegend=False,
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)'
+        )
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 
 # =========================================================
@@ -243,7 +255,7 @@ with col1:
         hd = df.pivot_table(values='Sales', index='Month', columns='Year', aggfunc='sum')
         hd.index = [MONTH_NAMES[m] for m in hd.index]
         fig = px.imshow(hd, aspect='auto', color_continuous_scale='Blues', template=plotly_template)
-        fig.update_traces(text=[[f"{currency}{v:,.0f}" for v in r] for r in hd.values], texttemplate="%{text}", textfont=dict(size=11))
+        fig.update_traces(text=[[f"{currency}{v/1000:,.0f}K" for v in r] for r in hd.values], texttemplate="%{text}", textfont=dict(size=11))
         fig.update_xaxes(side='top', title='', tickformat='d', dtick=1)
         fig.update_layout(coloraxis_showscale=False, height=400, margin=dict(l=20, r=20, t=20, b=20))
         st.plotly_chart(fig, width='stretch', config=plotly_config)
@@ -274,6 +286,7 @@ with col2:
         l10 = df.groupby('Product Name')['Profit'].sum().nsmallest(10).reset_index()
         fig = px.bar(l10, x='Profit', y='Product Name', orientation='h', template=plotly_template, color='Profit', color_continuous_scale='Reds_r', text_auto='.2s')
         fig.update_layout(yaxis={'categoryorder':'total descending'}, xaxis=dict(range=[l10['Profit'].min() * 1.1, 0]), coloraxis_showscale=False, height=400, margin=dict(l=20, r=20, t=20, b=20))
+        fig.update_xaxes(tickformat='s')
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 
 # =========================================================
