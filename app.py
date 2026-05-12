@@ -262,17 +262,17 @@ with col1:
         fig.update_layout(height=400, margin=dict(l=20, r=20, t=20, b=20), coloraxis_showscale=True,
                           coloraxis_colorbar=dict(title='Продажи', orientation='h', yanchor='bottom', y=-0.3, xanchor='center', x=0.5, len=0.8))
         st.plotly_chart(fig, width='stretch', config=plotly_config)
-with col2:
-    st.markdown('<div class="hide-on-mobile">', unsafe_allow_html=True)
-    with st.container(border=True, key="plot4"):
-        st.markdown('##### География продаж')
-        abbr = {'Alabama':'AL','Arizona':'AZ','Arkansas':'AR','California':'CA','Colorado':'CO','Connecticut':'CT','Delaware':'DE','Florida':'FL','Georgia':'GA','Idaho':'ID','Illinois':'IL','Indiana':'IN','Iowa':'IA','Kansas':'KS','Kentucky':'KY','Louisiana':'LA','Maine':'ME','Maryland':'MD','Massachusetts':'MA','Michigan':'MI','Minnesota':'MN','Mississippi':'MS','Missouri':'MO','Montana':'MT','Nebraska':'NE','Nevada':'NV','New Hampshire':'NH','New Jersey':'NJ','New Mexico':'NM','New York':'NY','North Carolina':'NC','North Dakota':'ND','Ohio':'OH','Oklahoma':'OK','Oregon':'OR','Pennsylvania':'PA','Rhode Island':'RI','South Carolina':'SC','South Dakota':'SD','Tennessee':'TN','Texas':'TX','Utah':'UT','Vermont':'VT','Virginia':'VA','Washington':'WA','West Virginia':'WV','Wisconsin':'WI','Wyoming':'WY','District of Columbia':'DC'}
-        sd = df.groupby('State').agg({'Sales':'sum','Profit':'sum'}).reset_index()
-        sd['Code'] = sd['State'].map(abbr)
-        fig = px.choropleth(sd, locations='Code', locationmode='USA-states', color='Sales', scope='usa', template=plotly_template, color_continuous_scale='Blues', hover_name='State')
-        fig.update_layout(coloraxis_showscale=False, height=400, margin=dict(l=20, r=20, t=20, b=20))
-        st.plotly_chart(fig, width='stretch', config=plotly_config)
-    st.markdown('</div>', unsafe_allow_html=True)
+# with col2:
+#     st.markdown('<div class="hide-on-mobile">', unsafe_allow_html=True)
+#     with st.container(border=True, key="plot4"):
+#         st.markdown('##### География продаж')
+#         abbr = {'Alabama':'AL','Arizona':'AZ','Arkansas':'AR','California':'CA','Colorado':'CO','Connecticut':'CT','Delaware':'DE','Florida':'FL','Georgia':'GA','Idaho':'ID','Illinois':'IL','Indiana':'IN','Iowa':'IA','Kansas':'KS','Kentucky':'KY','Louisiana':'LA','Maine':'ME','Maryland':'MD','Massachusetts':'MA','Michigan':'MI','Minnesota':'MN','Mississippi':'MS','Missouri':'MO','Montana':'MT','Nebraska':'NE','Nevada':'NV','New Hampshire':'NH','New Jersey':'NJ','New Mexico':'NM','New York':'NY','North Carolina':'NC','North Dakota':'ND','Ohio':'OH','Oklahoma':'OK','Oregon':'OR','Pennsylvania':'PA','Rhode Island':'RI','South Carolina':'SC','South Dakota':'SD','Tennessee':'TN','Texas':'TX','Utah':'UT','Vermont':'VT','Virginia':'VA','Washington':'WA','West Virginia':'WV','Wisconsin':'WI','Wyoming':'WY','District of Columbia':'DC'}
+#         sd = df.groupby('State').agg({'Sales':'sum','Profit':'sum'}).reset_index()
+#         sd['Code'] = sd['State'].map(abbr)
+#         fig = px.choropleth(sd, locations='Code', locationmode='USA-states', color='Sales', scope='usa', template=plotly_template, color_continuous_scale='Blues', hover_name='State')
+#         fig.update_layout(coloraxis_showscale=False, height=400, margin=dict(l=20, r=20, t=20, b=20))
+#         st.plotly_chart(fig, width='stretch', config=plotly_config)
+#     st.markdown('</div>', unsafe_allow_html=True)
 
 # =========================================================
 # РЯД 3: Топ-10 + Топ-10 убыточных
@@ -372,17 +372,17 @@ with col1:
             bar_html += '</div>'; labels_html += '</div>'
             st.markdown(bar_html + labels_html, unsafe_allow_html=True)
         st.caption('Золото — топ-30 продуктов по прибыли | Серебро — остальные прибыльные | Балласт — убыточные')
-with col2:
-    st.markdown('<div class="hide-on-mobile">', unsafe_allow_html=True)
-    with st.container(border=True, key="plot10"):
-        st.markdown('##### Категории и подкатегории')
-        sd = df.groupby(['Category','Sub-Category']).agg(Sales=('Sales','sum'), Profit=('Profit','sum')).reset_index()
-        fig = px.sunburst(sd, path=['Category','Sub-Category'], values='Sales', color='Profit', template=plotly_template,
-                          color_continuous_scale=['red','yellow','green'], labels={'Profit':'Прибыль'})
-        fig.update_layout(height=400, margin=dict(l=20,r=20,t=20,b=20),
-                          coloraxis_colorbar=dict(title='Прибыль', orientation='h', yanchor='bottom', y=-0.3, xanchor='center', x=0.5, len=0.5))
-        st.plotly_chart(fig, width='stretch', config=plotly_config)
-    st.markdown('</div>', unsafe_allow_html=True)
+# with col2:
+#     st.markdown('<div class="hide-on-mobile">', unsafe_allow_html=True)
+#     with st.container(border=True, key="plot10"):
+#         st.markdown('##### Категории и подкатегории')
+#         sd = df.groupby(['Category','Sub-Category']).agg(Sales=('Sales','sum'), Profit=('Profit','sum')).reset_index()
+#         fig = px.sunburst(sd, path=['Category','Sub-Category'], values='Sales', color='Profit', template=plotly_template,
+#                           color_continuous_scale=['red','yellow','green'], labels={'Profit':'Прибыль'})
+#         fig.update_layout(height=400, margin=dict(l=20,r=20,t=20,b=20),
+#                           coloraxis_colorbar=dict(title='Прибыль', orientation='h', yanchor='bottom', y=-0.3, xanchor='center', x=0.5, len=0.5))
+#         st.plotly_chart(fig, width='stretch', config=plotly_config)
+#     st.markdown('</div>', unsafe_allow_html=True)
 
 # =========================================================
 # РЯД 6: ПРОГНОЗ + БЭКТЕСТИНГ
