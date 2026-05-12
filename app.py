@@ -23,12 +23,12 @@ st.markdown("""
     [data-testid="stSidebar"] { display: none !important; }
     .main .block-container { max-width: 1200px; padding-top: 20px; }
 
-    .main-header { font-size: 36px; font-weight: 400; color: #1a1a1a; margin-bottom: 8px; }
+    .main-header { font-size: 42px; font-weight: 400; color: #1a1a1a; margin-bottom: 8px; }
     .main-subtitle { font-size: 14px; color: #6b7280; margin-bottom: 20px; }
 
     .year-summary { display: flex; gap: 40px; flex-wrap: wrap; margin: 16px 0; }
     .year-stat { text-align: center; }
-    .year-stat .value { font-size: 32px; font-weight: 700; color: #1a1a1a; }
+    .year-stat .value { font-size: 42px; font-weight: 400; color: #1a1a1a; }    
     .year-stat .label { font-size: 12px; color: #6b7280; text-transform: uppercase; }
 
     .top-bar {
@@ -151,19 +151,74 @@ orders = df['Order ID'].nunique();
 customers = df['Customer ID'].nunique()
 
 # =========================================================
-# YEAR SUMMARY
+# YEAR SUMMARY (как в demo: заголовок → цифра → динамика)
 # =========================================================
+# Считаем динамику к предыдущему году
+if len(years) >= 2:
+    # Берём последние два выбранных года
+    selected_sorted = sorted(years)
+    current_year = selected_sorted[-1]
+    prev_year = selected_sorted[-2]
+
+    df_prev = df_raw[df_raw['Year'] == prev_year]
+    if show_rub: df_prev = convert_to_rub(df_prev, rates)
+    prev_sales = df_prev['Sales'].sum()
+    prev_profit = df_prev['Profit'].sum()
+    prev_orders = df_prev['Order ID'].nunique()
+    prev_customers = df_prev['Customer ID'].nunique()
+
+    sales_delta = sales_sum - prev_sales
+    profit_delta = profit_sum - prev_profit
+    orders_delta = orders - prev_orders
+    customers_delta = customers - prev_customers
+else:
+    sales_delta = profit_delta = orders_delta = customers_delta = 0
+
+
+def delta_html(value, currency=''):
+    if len(years) < 2:
+        return ''  # ← не показываем дельту если выбран 1 год
+    if value > 0:
+        color = '#22c55e'
+        bg = '#f0fdf4'
+        arrow = '↑'
+        sign = '+'
+    elif value < 0:
+        color = '#ef4444'
+        bg = '#fef2f2'
+        arrow = '↓'
+        sign = ''
+    else:
+        return ''  # ← не показываем если 0
+
+    formatted = format_k(abs(value), currency) if abs(value) >= 1000 else f'{currency}{abs(value):,.0f}'
+    return f'<span style="color:{color};background:{bg};padding:2px 8px;border-radius:4px;font-size:13px;">{arrow} {sign}{formatted}</span>'
+
+
 st.markdown(f"""
 <div class="year-summary">
-    <div class="year-stat"><div class="value">{format_k(sales_sum, currency)}</div><div class="label">Total Sales</div></div>
-    <div class="year-stat"><div class="value">{format_k(profit_sum, currency)}</div><div class="label">Total Profit</div></div>
-    <div class="year-stat"><div class="value">{orders:,}</div><div class="label">Orders</div></div>
-    <div class="year-stat"><div class="value">{customers:,}</div><div class="label">Customers</div></div>
+    <div class="year-stat">
+        <div class="label">Total Sales</div>
+        <div class="value">{format_k(sales_sum, currency)}</div>
+        {delta_html(sales_delta, currency) if len(years) >= 2 else ''}
+    </div>
+    <div class="year-stat">
+        <div class="label">Total Profit</div>
+        <div class="value">{format_k(profit_sum, currency)}</div>
+        {delta_html(profit_delta, currency) if len(years) >= 2 else ''}
+    </div>
+    <div class="year-stat">
+        <div class="label">Orders</div>
+        <div class="value">{orders:,}</div>
+        {delta_html(orders_delta) if len(years) >= 2 else ''}
+    </div>
+    <div class="year-stat">
+        <div class="label">Customers</div>
+        <div class="value">{customers:,}</div>
+        {delta_html(customers_delta) if len(years) >= 2 else ''}
+    </div>
 </div>
 """, unsafe_allow_html=True)
-
-avg_discount = df['Discount'].mean() * 100
-avg_delivery = df['Processing Days'].mean()
 
 # =========================================================
 # monthly
@@ -179,13 +234,30 @@ plotly_config = {'staticPlot': True, 'responsive': True, 'displayModeBar': False
 col1, col2 = st.columns(2)
 with col1:
     with st.container(border=True, key="plot1"):
-        st.markdown('##### Продажи и Прибыль по месяцам')
-        fig = go.Figure(layout=dict(template=plotly_template))
-        fig.add_trace(go.Scatter(x=monthly['Order Date'], y=monthly['Sales'], name='Продажи', fill='tozeroy'))
-        fig.add_trace(go.Scatter(x=monthly['Order Date'], y=monthly['Profit'], name='Прибыль', fill='tozeroy'))
-        fig.update_layout(height=400, hovermode='x unified', margin=dict(l=20, r=20, t=20, b=30),
-                          legend=dict(orientation='h', yanchor='top', y=-0.2, xanchor='center', x=0.5))
-        st.plotly_chart(fig, width='stretch', config=plotly_config)
+        st.markdown(f"""
+        <div class="year-summary">
+            <div class="year-stat">
+                <div class="label">Total Sales</div>
+                <div class="value">{format_k(sales_sum, currency)}</div>
+                {delta_html(sales_delta, currency) if len(years) >= 2 else ''}
+            </div>
+            <div class="year-stat">
+                <div class="label">Total Profit</div>
+                <div class="value">{format_k(profit_sum, currency)}</div>
+                {delta_html(profit_delta, currency) if len(years) >= 2 else ''}
+            </div>
+            <div class="year-stat">
+                <div class="label">Orders</div>
+                <div class="value">{orders:,}</div>
+                {delta_html(orders_delta) if len(years) >= 2 else ''}
+            </div>
+            <div class="year-stat">
+                <div class="label">Customers</div>
+                <div class="value">{customers:,}</div>
+                {delta_html(customers_delta) if len(years) >= 2 else ''}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 with col2:
     with st.container(border=True, key="plot2"):
         st.markdown('##### Sales distribution')
