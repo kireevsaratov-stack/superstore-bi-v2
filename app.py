@@ -328,61 +328,67 @@ with col2:
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 
 # =========================================================
-# РЯД 5: ABC + Sunburst (sunburst скрыт на мобильных)
+# РЯД 5: ABC-анализ
 # =========================================================
-col1, col2 = st.columns(2)
-with col1:
-    with st.container(border=True, key="plot9"):
-        st.markdown('##### ABC-анализ')
-        ad = df.groupby('ABC').agg(Products=('Product Name','nunique'), Sales=('Sales','sum'), Profit=('Profit','sum')).reindex(['Золото','Серебро','Балласт']).fillna(0)
-        st.markdown("""
-        <div style="display:flex; padding:8px 16px; font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid #e5e7eb; margin-bottom:8px;">
-            <span style="width:35%;">Категория</span><span style="width:15%; text-align:center;">Продуктов</span><span style="width:25%; text-align:center;">Выручка</span><span style="width:25%; text-align:center;">Прибыль</span>
-        </div>""", unsafe_allow_html=True)
-        for abc, emoji, color in [('Золото','🥇','#22c55e'), ('Серебро','🥈','#f59e0b'), ('Балласт','🥉','#ef4444')]:
-            val_p = ad.loc[abc, 'Products']
-            val_s = ad.loc[abc, 'Sales']
-            val_profit = ad.loc[abc, 'Profit']
-            profit_color = '#22c55e' if val_profit >= 0 else '#ef4444'
-            st.markdown(f"""<div style="display:flex; align-items:center; padding:10px 16px; margin:4px 0; border-radius:8px; background:#f8fafc; border:1px solid #e5e7eb;">
-                <span style="font-size:15px; width:35%;">{emoji} <b>{abc}</b></span>
-                <span style="font-size:13px; color:#475569; width:15%; text-align:center;">{val_p:.0f}</span>
-                <span style="font-size:13px; font-weight:600; width:25%; text-align:center;">{currency}{format_k(val_s, currency)}</span>
-                <span style="font-size:13px; font-weight:600; color:{profit_color}; width:25%; text-align:center;">{currency}{format_k(val_profit, currency)}</span>
-            </div>""", unsafe_allow_html=True)
-        st.markdown('<br>', unsafe_allow_html=True)
-        st.markdown('##### ABC структура по выручке')
-        gold_sales = ad.loc['Золото', 'Sales']
-        silver_sales = ad.loc['Серебро', 'Sales']
-        bronze_sales = ad.loc['Балласт', 'Sales']
-        total_sales = gold_sales + silver_sales + bronze_sales
-        if total_sales > 0:
-            gold_pct = gold_sales/total_sales*100
-            silver_pct = silver_sales/total_sales*100
-            bronze_pct = bronze_sales/total_sales*100
-            segments = []
-            if gold_pct >= 0.1: segments.append((gold_pct, '#22c55e', '🥇 Золото'))
-            if silver_pct >= 0.1: segments.append((silver_pct, '#f59e0b', '🥈 Серебро'))
-            if bronze_pct >= 0.1: segments.append((bronze_pct, '#ef4444', '🥉 Балласт'))
-            bar_html = '<div style="display:flex; height:40px; border-radius:8px; overflow:hidden; margin:12px 0 6px 0;">'
-            labels_html = '<div style="display:flex; justify-content:space-between; font-size:11px; color:#6b7280; padding:0 4px;">'
-            for pct, seg_color, label in segments:
-                bar_html += f'<div style="width:{pct:.1f}%; background:{seg_color}; display:flex; align-items:center; justify-content:center; color:white; font-weight:600; font-size:13px;">{pct:.1f}%</div>'
-                labels_html += f'<span>{label}</span>'
-            bar_html += '</div>'; labels_html += '</div>'
-            st.markdown(bar_html + labels_html, unsafe_allow_html=True)
-        st.caption('Золото — топ-30 продуктов по прибыли | Серебро — остальные прибыльные | Балласт — убыточные')
-# with col2:
-#     st.markdown('<div class="hide-on-mobile">', unsafe_allow_html=True)
-#     with st.container(border=True, key="plot10"):
-#         st.markdown('##### Категории и подкатегории')
-#         sd = df.groupby(['Category','Sub-Category']).agg(Sales=('Sales','sum'), Profit=('Profit','sum')).reset_index()
-#         fig = px.sunburst(sd, path=['Category','Sub-Category'], values='Sales', color='Profit', template=plotly_template,
-#                           color_continuous_scale=['red','yellow','green'], labels={'Profit':'Прибыль'})
-#         fig.update_layout(height=400, margin=dict(l=20,r=20,t=20,b=20),
-#                           coloraxis_colorbar=dict(title='Прибыль', orientation='h', yanchor='bottom', y=-0.3, xanchor='center', x=0.5, len=0.5))
-#         st.plotly_chart(fig, width='stretch', config=plotly_config)
-#     st.markdown('</div>', unsafe_allow_html=True)
+with st.container(border=True, key="plot9"):
+    st.markdown('##### ABC-анализ')
+    ad = df.groupby('ABC').agg(Products=('Product Name', 'nunique'), Sales=('Sales', 'sum'),
+                               Profit=('Profit', 'sum')).reindex(['Золото', 'Серебро', 'Балласт']).fillna(0)
+
+    st.markdown("""
+    <div style="display:flex; padding:8px 16px; font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid #e5e7eb; margin-bottom:8px;">
+        <span style="width:35%;">Категория</span>
+        <span style="width:15%; text-align:center;">Продуктов</span>
+        <span style="width:25%; text-align:center;">Выручка</span>
+        <span style="width:25%; text-align:center;">Прибыль</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    for abc, emoji, color in [('Золото', '🥇', '#22c55e'), ('Серебро', '🥈', '#f59e0b'), ('Балласт', '🥉', '#ef4444')]:
+        val_p = ad.loc[abc, 'Products']
+        val_s = ad.loc[abc, 'Sales']
+        val_profit = ad.loc[abc, 'Profit']
+        profit_color = '#22c55e' if val_profit >= 0 else '#ef4444'
+        st.markdown(f"""
+        <div style="display:flex; align-items:center; padding:10px 16px; margin:4px 0; border-radius:8px; background:#f8fafc; border:1px solid #e5e7eb;">
+            <span style="font-size:15px; width:35%;">{emoji} <b>{abc}</b></span>
+            <span style="font-size:13px; color:#475569; width:15%; text-align:center;">{val_p:.0f}</span>
+            <span style="font-size:13px; font-weight:600; width:25%; text-align:center;">{currency}{format_k(val_s, currency)}</span>
+            <span style="font-size:13px; font-weight:600; color:{profit_color}; width:25%; text-align:center;">{currency}{format_k(val_profit, currency)}</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown('<br>', unsafe_allow_html=True)
+    st.markdown('##### ABC структура по выручке')
+
+    gold_sales = ad.loc['Золото', 'Sales']
+    silver_sales = ad.loc['Серебро', 'Sales']
+    bronze_sales = ad.loc['Балласт', 'Sales']
+    total_sales = gold_sales + silver_sales + bronze_sales
+
+    if total_sales > 0:
+        gold_pct = gold_sales / total_sales * 100
+        silver_pct = silver_sales / total_sales * 100
+        bronze_pct = bronze_sales / total_sales * 100
+
+        segments = []
+        if gold_pct >= 0.1: segments.append((gold_pct, '#22c55e', '🥇 Золото'))
+        if silver_pct >= 0.1: segments.append((silver_pct, '#f59e0b', '🥈 Серебро'))
+        if bronze_pct >= 0.1: segments.append((bronze_pct, '#ef4444', '🥉 Балласт'))
+
+        bar_html = '<div style="display:flex; height:40px; border-radius:8px; overflow:hidden; margin:12px 0 6px 0;">'
+        labels_html = '<div style="display:flex; justify-content:space-between; font-size:11px; color:#6b7280; padding:0 4px;">'
+
+        for pct, seg_color, label in segments:
+            bar_html += f'<div style="width:{pct:.1f}%; background:{seg_color}; display:flex; align-items:center; justify-content:center; color:white; font-weight:600; font-size:13px;">{pct:.1f}%</div>'
+            labels_html += f'<span>{label}</span>'
+
+        bar_html += '</div>'
+        labels_html += '</div>'
+
+        st.markdown(bar_html + labels_html, unsafe_allow_html=True)
+
+    st.caption('Золото — топ-30 продуктов по прибыли | Серебро — остальные прибыльные | Балласт — убыточные')
 
 # =========================================================
 # РЯД 6: ПРОГНОЗ + БЭКТЕСТИНГ
