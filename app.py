@@ -23,20 +23,33 @@ st.markdown("""
     [data-testid="stSidebar"] { display: none !important; }
     .main .block-container { max-width: 1200px; padding-top: 20px; }
 
+    .main-header { font-size: 28px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px; }
+    .main-subtitle { font-size: 14px; color: #6b7280; margin-bottom: 20px; }
+
+    .year-summary { display: flex; gap: 40px; flex-wrap: wrap; margin: 16px 0; }
+    .year-stat { text-align: center; }
+    .year-stat .value { font-size: 32px; font-weight: 700; color: #1a1a1a; }
+    .year-stat .label { font-size: 12px; color: #6b7280; text-transform: uppercase; }
+
     .top-bar {
         background: white;
         border: 1px solid #e5e7eb;
         border-radius: 12px;
         padding: 16px 24px;
         margin-bottom: 20px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     }
 
-    .kpi-value { font-size: 24px; font-weight: 700; color: #1a1a1a; }
-    .kpi-label { font-size: 12px; font-weight: 500; color: #6b7280; }
+    /* Тонкие светлые рамки */
+    .st-key-plot1, .st-key-plot2, .st-key-plot3, .st-key-plot4,
+    .st-key-plot5, .st-key-plot6, .st-key-plot7, .st-key-plot8,
+    .st-key-plot9, .st-key-plot10, .st-key-plot11, .st-key-plot12 {
+        border: 1px solid #e5e7eb !important;
+        border-radius: 10px !important;
+        padding: 16px !important;
+        margin-bottom: 12px !important;
+    }
 
-    h1 { font-size: 18px; font-weight: 600; color: #1a1a1a; margin-bottom: 16px; }
-    h3 { font-size: 14px; font-weight: 600; color: #1a1a1a; }
+    h3, h5 { font-size: 14px; font-weight: 600; color: #1a1a1a; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -108,16 +121,23 @@ rates = get_exchange_rates()
 df_raw = load_data()
 
 # =========================================================
+# HEADER
+# =========================================================
+st.markdown('<div class="main-header">Superstore Sales</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-subtitle">Let\'s explore the classic Superstore dataset!</div>', unsafe_allow_html=True)
+
+# =========================================================
 # TOP BAR
 # =========================================================
 st.markdown('<div class="top-bar">', unsafe_allow_html=True)
-c1, c2, c3 = st.columns([2, 3, 1])
-with c1: st.markdown("**BI Data analysis**")
-with c2:
-    all_years = sorted(df_raw['Year'].unique())
-    years = st.pills("Годы", options=all_years, default=all_years, selection_mode="multi", key="y",
+c1, c2 = st.columns([3, 1])
+with c1:
+    st.markdown("**Compare different years**")
+    years = st.pills("Years to compare", options=sorted(df_raw['Year'].unique()),
+                     default=sorted(df_raw['Year'].unique()), selection_mode="multi", key="y",
                      label_visibility="collapsed")
-with c3: show_rub = st.toggle("🇷🇺 RUB", value=False)
+with c2:
+    show_rub = st.toggle("🇷🇺 RUB", value=False)
 st.markdown('</div>', unsafe_allow_html=True)
 
 df = df_raw.copy()
@@ -126,25 +146,29 @@ currency = '₽' if show_rub else '$'
 if show_rub: df = convert_to_rub(df, rates)
 if df.empty: st.warning('Нет данных.'), st.stop()
 
-# =========================================================
-# KPI (без рамок)
-# =========================================================
 sales_sum = df['Sales'].sum();
 profit_sum = df['Profit'].sum()
-margin = safe_div(profit_sum, sales_sum) * 100
 orders = df['Order ID'].nunique();
 customers = df['Customer ID'].nunique()
-avg_discount = df['Discount'].mean() * 100;
+
+# =========================================================
+# YEAR SUMMARY
+# =========================================================
+st.markdown(f"""
+<div class="year-summary">
+    <div class="year-stat"><div class="value">{format_k(sales_sum, currency)}</div><div class="label">Total Sales</div></div>
+    <div class="year-stat"><div class="value">{format_k(profit_sum, currency)}</div><div class="label">Total Profit</div></div>
+    <div class="year-stat"><div class="value">{orders:,}</div><div class="label">Orders</div></div>
+    <div class="year-stat"><div class="value">{customers:,}</div><div class="label">Customers</div></div>
+</div>
+""", unsafe_allow_html=True)
+
+avg_discount = df['Discount'].mean() * 100
 avg_delivery = df['Processing Days'].mean()
+st.markdown(f'Most common discount: **{avg_discount:.1f}%** · Avg delivery: **{avg_delivery:.1f} days**')
 
-kpi = st.columns(6)
-for c, (l, v) in zip(kpi, [
-    ('Выручка', format_k(sales_sum, currency)), ('Прибыль', format_k(profit_sum, currency)),
-    ('Заказы', f'{orders:,}'), ('Клиенты', f'{customers:,}'),
-    ('Скидка', f'{avg_discount:.1f}%'), ('Доставка', f'{avg_delivery:.1f} дн')
-]):
-    with c: st.markdown(f'<div class="kpi-label">{l}</div><div class="kpi-value">{v}</div>', unsafe_allow_html=True)
-
+# =========================================================
+# monthly
 # =========================================================
 monthly = df.groupby(df['Order Date'].dt.to_period('M')).agg({'Sales': 'sum', 'Profit': 'sum'}).reset_index()
 monthly['Order Date'] = monthly['Order Date'].astype(str)
@@ -156,7 +180,7 @@ plotly_config = {'staticPlot': True, 'responsive': True, 'displayModeBar': False
 # =========================================================
 col1, col2 = st.columns(2)
 with col1:
-    with st.container(border=True):
+    with st.container(border=True, key="plot1"):
         st.markdown('##### Продажи и Прибыль по месяцам')
         fig = go.Figure(layout=dict(template=plotly_template))
         fig.add_trace(go.Scatter(x=monthly['Order Date'], y=monthly['Sales'], name='Продажи', fill='tozeroy'))
@@ -165,14 +189,20 @@ with col1:
                           legend=dict(orientation='h', yanchor='top', y=-0.2, xanchor='center', x=0.5))
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 with col2:
-    with st.container(border=True):
-        st.markdown('##### Продажи по категориям')
-        cat = df.groupby('Category').agg(Sales=('Sales', 'sum'), Profit=('Profit', 'sum')).reset_index()
+    with st.container(border=True, key="plot2"):
+        st.markdown('##### Sales distribution')
+        cat = df.groupby('Category').agg(Sales=('Sales', 'sum')).reset_index()
         fig = go.Figure()
-        fig.add_trace(go.Pie(labels=cat['Category'], values=cat['Sales'], hole=0.5,
-                             texttemplate='%{label}<br>%{percent:.1%}<br>' + currency + '%{value:,.0f}',
-                             marker=dict(colors=px.colors.qualitative.Pastel[:3], line=dict(color='white', width=4))))
-        fig.update_layout(height=400, margin=dict(l=20, r=20, t=20, b=20))
+        fig.add_trace(go.Pie(
+            labels=cat['Category'], values=cat['Sales'],
+            hole=0.6,
+            textinfo='label+percent',
+            texttemplate='%{label}<br>%{percent:.1%}',
+            marker=dict(colors=px.colors.qualitative.Pastel[:3], line=dict(color='white', width=2)),
+            textfont=dict(size=14),
+            sort=False
+        ))
+        fig.update_layout(height=400, margin=dict(l=20, r=20, t=20, b=20), showlegend=False)
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 
 # =========================================================
@@ -180,7 +210,7 @@ with col2:
 # =========================================================
 col1, col2 = st.columns(2)
 with col1:
-    with st.container(border=True):
+    with st.container(border=True, key="plot3"):
         st.markdown('##### Сезонность')
         hd = df.pivot_table(values='Sales', index='Month', columns='Year', aggfunc='sum')
         hd.index = [MONTH_NAMES[m] for m in hd.index]
@@ -191,7 +221,7 @@ with col1:
         fig.update_layout(coloraxis_showscale=False, height=400, margin=dict(l=20, r=20, t=20, b=20))
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 with col2:
-    with st.container(border=True):
+    with st.container(border=True, key="plot4"):
         st.markdown('##### География')
         abbr = {'Alabama': 'AL', 'Arizona': 'AZ', 'Arkansas': 'AR', 'California': 'CA', 'Colorado': 'CO',
                 'Connecticut': 'CT', 'Delaware': 'DE', 'Florida': 'FL', 'Georgia': 'GA', 'Idaho': 'ID',
@@ -215,7 +245,7 @@ with col2:
 # =========================================================
 col1, col2 = st.columns(2)
 with col1:
-    with st.container(border=True):
+    with st.container(border=True, key="plot5"):
         st.markdown('##### Топ-10 продуктов')
         t10 = df.groupby('Product Name')['Sales'].sum().nlargest(10).reset_index()
         fig = px.bar(t10, x='Sales', y='Product Name', orientation='h', template=plotly_template, color='Sales',
@@ -224,7 +254,7 @@ with col1:
                           coloraxis_showscale=False, height=400, margin=dict(l=20, r=20, t=20, b=20))
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 with col2:
-    with st.container(border=True):
+    with st.container(border=True, key="plot6"):
         st.markdown('##### Топ-10 убыточных')
         l10 = df.groupby('Product Name')['Profit'].sum().nsmallest(10).reset_index()
         fig = px.bar(l10, x='Profit', y='Product Name', orientation='h', template=plotly_template, color='Profit',
@@ -238,7 +268,7 @@ with col2:
 # =========================================================
 col1, col2 = st.columns(2)
 with col1:
-    with st.container(border=True):
+    with st.container(border=True, key="plot7"):
         st.markdown('##### Скидки vs Прибыль')
         dp = df.copy()
         dp['DL'] = pd.cut(dp['Discount'], bins=[-0.01, 0.05, 0.2, 0.5, 1],
@@ -252,7 +282,7 @@ with col1:
                           margin=dict(l=20, r=20, t=20, b=20))
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 with col2:
-    with st.container(border=True):
+    with st.container(border=True, key="plot8"):
         st.markdown('##### Топ-20 клиентов')
         cs = df.groupby('Customer ID').agg(Customer_Name=('Customer Name', 'first'), Total_Sales=('Sales', 'sum'),
                                            Total_Profit=('Profit', 'sum'), Orders=('Order ID', 'nunique')).reset_index()
@@ -270,7 +300,7 @@ with col2:
 # =========================================================
 col1, col2 = st.columns(2)
 with col1:
-    with st.container(border=True):
+    with st.container(border=True, key="plot9"):
         st.markdown('##### ABC-анализ')
         ad = df.groupby('ABC').agg(Products=('Product Name', 'nunique'), Sales=('Sales', 'sum'),
                                    Profit=('Profit', 'sum')).reindex(
@@ -280,7 +310,7 @@ with col1:
         fig.update_layout(height=400, coloraxis_showscale=False, margin=dict(l=20, r=20, t=20, b=20))
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 with col2:
-    with st.container(border=True):
+    with st.container(border=True, key="plot10"):
         st.markdown('##### Категории и подкатегории')
         sd = df.groupby(['Category', 'Sub-Category']).agg(Sales=('Sales', 'sum'),
                                                           Profit=('Profit', 'sum')).reset_index()
@@ -292,7 +322,7 @@ with col2:
 # =========================================================
 # РЯД 6: ПРОГНОЗ + БЭКТЕСТИНГ
 # =========================================================
-with st.container(border=True):
+with st.container(border=True, key="plot11"):
     st.markdown('##### Прогноз продаж')
     try:
         from statsmodels.tsa.holtwinters import ExponentialSmoothing
@@ -347,7 +377,7 @@ with st.container(border=True):
 # =========================================================
 # РЯД 7: ЭКСПОРТ
 # =========================================================
-with st.container(border=True):
+with st.container(border=True, key="plot12"):
     st.markdown('##### Экспорт')
     c1, c2 = st.columns(2)
     with c1:
