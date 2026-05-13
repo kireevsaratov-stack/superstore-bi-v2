@@ -300,13 +300,18 @@ with col2:
     with st.container(border=True, key="plot6"):
         st.markdown('##### Топ-10 убыточных продуктов')
         l10 = df.groupby('Product Name')['Profit'].sum().nsmallest(10).reset_index()
-        l10['Product Name'] = l10['Product Name'].apply(lambda x: x[:30] + '...' if len(x) > 30 else x)
+        l10['Product Name'] = l10['Product Name'].apply(lambda x: x[:20] + '...' if len(x) > 20 else x)
         fig = px.bar(l10, x='Profit', y='Product Name', orientation='h', template=plotly_template,
                      color='Profit', color_continuous_scale='Reds_r', labels={'Profit': 'Прибыль', 'Product Name': ''})
         fig.update_traces(text=l10['Profit'].apply(lambda x: f'-{format_k(abs(x), currency)}'), textposition='outside', textfont=dict(size=11))
-        fig.update_layout(yaxis={'categoryorder': 'total descending'}, xaxis=dict(range=[l10['Profit'].min() * 1.15, 0],
-                          tickmode='array', tickvals=[-8000, -6000, -4000, -2000, 0], ticktext=['-8K', '-6K', '-4K', '-2K', '0']),
-                          coloraxis_showscale=False, height=400, margin=dict(l=0, r=0, t=20, b=0))
+        fig.update_layout(
+            yaxis={'categoryorder': 'total descending', 'automargin': True, 'tickfont': dict(size=10)},
+            xaxis=dict(range=[l10['Profit'].min() * 1.15, 0], tickmode='array',
+                       tickvals=[-8000, -6000, -4000, -2000, 0], ticktext=['-8K', '-6K', '-4K', '-2K', '0']),
+            coloraxis_showscale=False,
+            height=400,
+            margin=dict(l=5, r=10, t=20, b=0)
+        )
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 
 # =========================================================
