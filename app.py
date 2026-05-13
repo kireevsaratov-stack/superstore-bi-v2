@@ -312,7 +312,7 @@ with col1:
             xaxis=dict(range=[0, t10['Sales'].max() * 1.15]),
             coloraxis_showscale=False,
             height=400,
-            margin=dict(l=10, r=20, t=20, b=20)
+            margin=dict(l=5, r=5, t=20, b=20)
         )
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 
