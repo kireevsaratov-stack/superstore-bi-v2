@@ -48,14 +48,15 @@ st.markdown("""
     .year-stat .value { font-size: 42px; font-weight: 400; color: #1a1a1a; }    
     .year-stat .label { font-size: 12px; color: #6b7280; text-transform: uppercase; }
 
-    /* Тонкие светлые рамки */
+        /* Тонкие светлые рамки — заменить на нижнюю линию */
     .st-key-plot1, .st-key-plot2, .st-key-plot3, .st-key-plot4,
     .st-key-plot5, .st-key-plot6, .st-key-plot7, .st-key-plot8,
     .st-key-plot9, .st-key-plot10, .st-key-plot11, .st-key-plot12 {
-        border: 1px solid #e5e7eb !important;
-        border-radius: 10px !important;
-        padding: 16px !important;
-        margin-bottom: 12px !important;
+        border: none !important;
+        border-bottom: 1px solid #e5e7eb !important;
+        border-radius: 0 !important;
+        padding: 12px 8px !important;
+        margin-bottom: 0 !important;
     }
 
     /* Скрываем на мобильных */
@@ -454,15 +455,39 @@ with col1:
 with col2:
     with st.container(border=True, key="plot8"):
         st.markdown('##### Топ-20 клиентов')
-        cs = df.groupby('Customer ID').agg(Customer_Name=('Customer Name','first'), Total_Sales=('Sales','sum'),
-                                           Total_Profit=('Profit','sum'), Orders=('Order ID','nunique')).reset_index()
+        cs = df.groupby('Customer ID').agg(
+            Customer_Name=('Customer Name', 'first'),
+            Total_Sales=('Sales', 'sum'),
+            Total_Profit=('Profit', 'sum'),
+            Orders=('Order ID', 'nunique')
+        ).reset_index()
         tc = cs.nlargest(20, 'Total_Sales')
-        fig = px.bar(tc, x='Total_Sales', y='Customer_Name', orientation='h', color='Total_Profit',
-                     template=plotly_template, color_continuous_scale=['red','yellow','green'],
-                     labels={'Total_Sales': 'Итого покупок', 'Customer_Name': ''})
-        fig.update_traces(text=tc['Total_Sales'].apply(lambda x: f'{format_k(x, currency)}'), textposition='outside', textfont=dict(size=11))
-        fig.update_layout(yaxis={'categoryorder': 'total ascending'}, height=400, coloraxis_showscale=False, margin=dict(l=20,r=20,t=20,b=20))
+
+        # Цвета как в Скидки vs Прибыль: зелёный = прибыль, красный = убыток
+        colors = ['#00CC96' if x > 0 else '#EF553B' for x in tc['Total_Profit']]
+
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            y=tc['Customer_Name'],
+            x=tc['Total_Sales'],
+            orientation='h',
+            marker_color=colors,
+            text=tc['Total_Sales'].apply(lambda x: f'{format_k(x, currency)}'),
+            textposition='outside',
+            textfont=dict(size=11)
+        ))
+
+        fig.update_layout(
+            yaxis={'categoryorder': 'total ascending'},
+            height=400,
+            showlegend=False,
+            margin=dict(l=20, r=80, t=20, b=20),
+            xaxis=dict(range=[0, tc['Total_Sales'].max() * 1.15]),
+            template=plotly_template
+        )
+
         st.plotly_chart(fig, width='stretch', config=plotly_config)
+        st.caption('Красным выделены покупатели с отрицательной прибылью для магазина (убыток)')
 
 
 # =========================================================
