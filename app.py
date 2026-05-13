@@ -308,11 +308,11 @@ with col1:
         fig.update_traces(text=t10['Sales'].apply(lambda x: f'{format_k(x, currency)}'), textposition='outside',
                           textfont=dict(size=11))
         fig.update_layout(
-            yaxis={'categoryorder': 'total ascending', 'automargin': True, 'tickfont': dict(size=10)},
+            yaxis={'categoryorder': 'total ascending', 'tickfont': dict(size=10)},
             xaxis=dict(range=[0, t10['Sales'].max() * 1.15]),
             coloraxis_showscale=False,
             height=400,
-            margin=dict(l=5, r=5, t=20, b=20)
+            margin=dict(l=0, r=0, t=20, b=0)
         )
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 
