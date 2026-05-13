@@ -290,7 +290,7 @@ with col2:
         c1.metric('Всего продуктов', f'{len(pareto)}')
         c2.metric(f'Дают 80% прибыли', f'{products_80}')
         c3.metric(f'Убыточных продуктов', f'{len(loss)}')
-                  delta_color='off')
+        c3.caption(f'Убыток: {format_k(abs(loss["Profit"].sum()), currency)}')
 
 # =========================================================
 # РЯД 3: Топ-10 + Топ-10 убыточных
