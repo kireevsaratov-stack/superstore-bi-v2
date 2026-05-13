@@ -273,15 +273,15 @@ with col2:
                               legend=dict(orientation='h', yanchor='top', y=-0.25, xanchor='center', x=0.5))
             st.plotly_chart(fig, width='stretch', config=plotly_config)
 
-        with struct_tabs[1]:  # Sunburst: красный/зелёный
+        with struct_tabs[1]:  # Sunburst с цветами как в Скидках
             fig = px.sunburst(
                 sd,
                 path=['Category', 'Sub-Category'],
                 values='Sales',
                 color='Profit',
                 template=plotly_template,
-                color_continuous_scale=[[0, '#EF553B'], [0.5, '#fecaca'], [0.5, '#bbf7d0'], [1, '#00CC96']],
-                range_color=[sd['Profit'].min(), sd['Profit'].max()],
+                color_continuous_scale=['#EF553B', '#f59e0b', '#00CC96'],
+                color_continuous_midpoint=0,
                 maxdepth=2
             )
             fig.update_traces(
@@ -526,9 +526,8 @@ with col2:
             Total_Profit=('Profit', 'sum'),
             Orders=('Order ID', 'nunique')
         ).reset_index()
-        tc = cs.nlargest(20, 'Total_Sales')
+        tc = cs.nlargest(20, 'Total_Sales')  # ← эта строка обязательна!
 
-        # Цвета как в Скидки vs Прибыль: зелёный = прибыль, красный = убыток
         colors = ['#00CC96' if x > 0 else '#EF553B' for x in tc['Total_Profit']]
 
         fig = go.Figure()
@@ -543,10 +542,10 @@ with col2:
         ))
 
         fig.update_layout(
-            yaxis={'categoryorder': 'total ascending'},
+            yaxis={'categoryorder': 'total ascending', 'automargin': True},
             height=400,
             showlegend=False,
-            margin=dict(l=20, r=80, t=20, b=20),
+            margin=dict(l=20, r=20, t=20, b=20),
             xaxis=dict(range=[0, tc['Total_Sales'].max() * 1.15]),
             template=plotly_template
         )
