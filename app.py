@@ -199,7 +199,7 @@ st.markdown('\n'.join(html_parts), unsafe_allow_html=True)
 # =========================================================
 monthly = df.groupby(df['Order Date'].dt.to_period('M')).agg({'Sales': 'sum', 'Profit': 'sum'}).reset_index()
 monthly['Order Date'] = monthly['Order Date'].astype(str)
-plotly_template = 'plotly'
+plotly_template = 'plotly_white'
 plotly_config = {'staticPlot': True, 'responsive': True, 'displayModeBar': False, 'displaylogo': False}
 
 # =========================================================
