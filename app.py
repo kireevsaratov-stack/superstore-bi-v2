@@ -289,7 +289,7 @@ with col2:
         c1, c2, c3 = st.columns(3)
         c1.metric('Всего продуктов', f'{len(pareto)}')
         c2.metric(f'Дают 80% прибыли', f'{products_80}')
-        c3.metric(f'Убыточных продуктов', f'{len(loss)} ({format_k(loss["Profit"].sum(), currency)})')
+        c3.metric(f'Убыточных продуктов', f'{len(loss)}\n\n{format_k(loss["Profit"].sum(), currency)}')
 
 
 # =========================================================
