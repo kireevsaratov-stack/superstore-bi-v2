@@ -226,8 +226,10 @@ with col1:
     with st.container(border=True, key="plot1"):
         st.markdown('##### Продажи и Прибыль по месяцам')
         fig = go.Figure(layout=dict(template=plotly_template))
-        fig.add_trace(go.Scatter(x=monthly['Order Date'], y=monthly['Sales'], name='Продажи', fill='tozeroy'))
-        fig.add_trace(go.Scatter(x=monthly['Order Date'], y=monthly['Profit'], name='Прибыль', fill='tozeroy'))
+        fig.add_trace(go.Scatter(x=monthly['Order Date'], y=monthly['Sales'], name='Продажи', fill='tozeroy',
+                                 line=dict(color='#1a56db')))
+        fig.add_trace(go.Scatter(x=monthly['Order Date'], y=monthly['Profit'], name='Прибыль', fill='tozeroy',
+                                 line=dict(color='#00CC96')))
         total_months = len(monthly)
         if total_months <= 12: tick_spacing = 1
         elif total_months <= 24: tick_spacing = 2
@@ -246,24 +248,77 @@ with col1:
 with col2:
     with st.container(border=True, key="plot2"):
         st.markdown('##### Структура продаж по категориям')
-        cat = df.groupby('Category').agg(Sales=('Sales', 'sum')).reset_index()
-        colors = ['#636EFA', '#00CC96', '#EF553B']
-        fig = go.Figure()
-        fig.add_trace(go.Pie(
-            labels=cat['Category'], values=cat['Sales'], hole=0.3,
-            textinfo='percent+value',
-            texttemplate='%{percent:.1%}<br>' + currency + '%{customdata:,.0f}K',
-            customdata=[v/1000 for v in cat['Sales']],
-            marker=dict(colors=colors, line=dict(color='white', width=2)),
-            textfont=dict(size=13), insidetextorientation='horizontal',
-            sort=False, direction='clockwise', rotation=90, showlegend=True
-        ))
-        fig.update_layout(
-            height=400, margin=dict(l=20, r=20, t=20, b=20),
-            legend=dict(orientation='h', yanchor='top', y=-0.25, xanchor='center', x=0.5, font=dict(size=12)),
-            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
-        )
-        st.plotly_chart(fig, width='stretch', config=plotly_config)
+        cat = df.groupby('Category').agg(Sales=('Sales', 'sum'), Profit=('Profit', 'sum')).reset_index()
+        cat['Margin %'] = cat['Profit'] / cat['Sales'] * 100
+
+        # Данные для sunburst
+        sd = df.groupby(['Category', 'Sub-Category']).agg(Sales=('Sales', 'sum'),
+                                                          Profit=('Profit', 'sum')).reset_index()
+
+        struct_tabs = st.tabs(['Donut', 'Sunburst', 'Bar', 'Scatter'])
+
+        with struct_tabs[0]:  # Donut как сейчас
+            colors = ['#636EFA', '#00CC96', '#EF553B']
+            fig = go.Figure()
+            fig.add_trace(go.Pie(
+                labels=cat['Category'], values=cat['Sales'], hole=0.3,
+                textinfo='percent+value',
+                texttemplate='%{percent:.1%}<br>' + currency + '%{customdata:,.0f}K',
+                customdata=[v / 1000 for v in cat['Sales']],
+                marker=dict(colors=colors, line=dict(color='white', width=2)),
+                textfont=dict(size=13), insidetextorientation='horizontal',
+                sort=False, direction='clockwise', rotation=90, showlegend=True
+            ))
+            fig.update_layout(height=400, margin=dict(l=20, r=20, t=20, b=20),
+                              legend=dict(orientation='h', yanchor='top', y=-0.25, xanchor='center', x=0.5))
+            st.plotly_chart(fig, width='stretch', config=plotly_config)
+
+        with struct_tabs[1]:  # Sunburst: красный/зелёный
+            fig = px.sunburst(
+                sd,
+                path=['Category', 'Sub-Category'],
+                values='Sales',
+                color='Profit',
+                template=plotly_template,
+                color_continuous_scale=[[0, '#EF553B'], [0.5, '#fecaca'], [0.5, '#bbf7d0'], [1, '#00CC96']],
+                range_color=[sd['Profit'].min(), sd['Profit'].max()],
+                maxdepth=2
+            )
+            fig.update_traces(
+                textinfo='label+percent parent',
+                textfont=dict(size=12),
+                hovertemplate='<b>%{label}</b><br>Выручка: %{value:,.0f}<br>Прибыль: %{color:,.0f}<extra></extra>'
+            )
+            fig.update_layout(
+                height=400,
+                margin=dict(l=20, r=20, t=20, b=20),
+                coloraxis_colorbar=dict(
+                    title='Прибыль',
+                    orientation='h',
+                    yanchor='bottom',
+                    y=-0.3,
+                    xanchor='center',
+                    x=0.5,
+                    len=0.5
+                )
+            )
+            st.plotly_chart(fig, width='stretch', config=plotly_config)
+
+        with struct_tabs[2]:  # Bar: выручка + прибыль
+            cat_melt = cat.melt(id_vars='Category', value_vars=['Sales', 'Profit'])
+            fig = px.bar(cat_melt, x='Category', y='value', color='variable', barmode='group',
+                         template=plotly_template, color_discrete_map={'Sales': '#636EFA', 'Profit': '#00CC96'})
+            fig.update_layout(height=400, margin=dict(l=20, r=20, t=20, b=20),
+                              legend=dict(orientation='h', yanchor='top', y=-0.2, xanchor='center', x=0.5))
+            st.plotly_chart(fig, width='stretch', config=plotly_config)
+
+        with struct_tabs[3]:  # Scatter: выручка vs маржа
+            fig = px.scatter(cat, x='Sales', y='Margin %', size='Profit', color='Category',
+                             template=plotly_template, size_max=50,
+                             color_discrete_sequence=['#636EFA', '#00CC96', '#EF553B'])
+            fig.add_hline(y=0, line_dash="dash", opacity=0.5)
+            fig.update_layout(height=400, margin=dict(l=20, r=20, t=20, b=20))
+            st.plotly_chart(fig, width='stretch', config=plotly_config)
 
 # =========================================================
 # РЯД 2: Сезонность + ABC
@@ -347,8 +402,13 @@ with col1:
         t10 = df.groupby('Product Name')['Sales'].sum().nlargest(10).reset_index()
         t10['Product Name'] = t10['Product Name'].apply(lambda x: x[:25] + '...' if len(x) > 25 else x)
         fig = px.bar(t10, x='Sales', y='Product Name', orientation='h', template=plotly_template,
-                     color='Sales', color_continuous_scale='Blues', text_auto='.2s',
+                     color='Sales', color_continuous_scale='Blues',
                      labels={'Sales': 'Продажи', 'Product Name': ''})
+        fig.update_traces(
+            text=t10['Sales'].apply(lambda x: f'{format_k(x, currency)}'),
+            textposition='outside',
+            textfont=dict(size=11)
+        )
         fig.update_layout(
             yaxis={'categoryorder': 'total ascending', 'side': 'left', 'automargin': True},
             xaxis=dict(range=[0, t10['Sales'].max() * 1.1]),
@@ -372,7 +432,12 @@ with col2:
         )
         fig.update_layout(
             yaxis={'categoryorder': 'total descending'},
-            xaxis=dict(range=[l10['Profit'].min() * 1.1, 0]),
+            xaxis=dict(
+                range=[l10['Profit'].min() * 1.1, 0],
+                tickmode='array',
+                tickvals=[-8000, -6000, -4000, -2000, 0],
+                ticktext=['-8K', '-6K', '-4K', '-2K', '0']
+            ),
             coloraxis_showscale=False,
             height=400,
             margin=dict(l=20, r=20, t=20, b=20)
