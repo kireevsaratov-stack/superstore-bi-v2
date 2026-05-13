@@ -307,9 +307,13 @@ with col1:
                      labels={'Sales': 'Продажи', 'Product Name': ''})
         fig.update_traces(text=t10['Sales'].apply(lambda x: f'{format_k(x, currency)}'), textposition='outside',
                           textfont=dict(size=11))
-        fig.update_layout(yaxis={'categoryorder': 'total ascending', 'automargin': True},
-                          xaxis=dict(range=[0, t10['Sales'].max() * 1.15]), coloraxis_showscale=False,
-                          height=400, margin=dict(l=20, r=20, t=20, b=20))
+        fig.update_layout(
+            yaxis={'categoryorder': 'total ascending', 'automargin': True},
+            xaxis=dict(range=[0, t10['Sales'].max() * 1.15]),
+            coloraxis_showscale=False,
+            height=400,
+            margin=dict(l=20, r=20, t=20, b=20)
+        )
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 
 with col2:
@@ -321,11 +325,14 @@ with col2:
                      color='Profit', color_continuous_scale='Reds_r', labels={'Profit': 'Прибыль', 'Product Name': ''})
         fig.update_traces(text=l10['Profit'].apply(lambda x: f'-{format_k(abs(x), currency)}'), textposition='outside',
                           textfont=dict(size=11))
-        fig.update_layout(yaxis={'categoryorder': 'total descending', 'automargin': True},
-                          xaxis=dict(range=[l10['Profit'].min() * 1.15, 0], tickmode='array',
-                                     tickvals=[-8000, -6000, -4000, -2000, 0],
-                                     ticktext=['-8K', '-6K', '-4K', '-2K', '0']),
-                          coloraxis_showscale=False, height=400, margin=dict(l=20, r=20, t=20, b=20))
+        fig.update_layout(
+            yaxis={'categoryorder': 'total descending', 'automargin': True},
+            xaxis=dict(range=[l10['Profit'].min() * 1.15, 0], tickmode='array',
+                       tickvals=[-8000, -6000, -4000, -2000, 0], ticktext=['-8K', '-6K', '-4K', '-2K', '0']),
+            coloraxis_showscale=False,
+            height=400,
+            margin=dict(l=20, r=20, t=20, b=20)
+        )
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 
 # =========================================================
