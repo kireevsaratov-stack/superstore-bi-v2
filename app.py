@@ -54,7 +54,17 @@ st.markdown("""
         padding: 12px 8px !important;
         margin-bottom: 0 !important;
     }
-
+    /* Принудительная светлая тема для всех */
+    [data-testid="stAppViewContainer"] {
+        background-color: #ffffff !important;
+        color: #1a1a1a !important;
+    }
+    [data-testid="stHeader"] {
+        background-color: #ffffff !important;
+    }
+    [data-testid="stToolbar"] {
+        background-color: #ffffff !important;
+    }
     h3, h5 { font-size: 14px; font-weight: 600; color: #1a1a1a; }
 </style>
 """, unsafe_allow_html=True)
