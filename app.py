@@ -283,59 +283,68 @@ with col1:
                                                   xanchor='center', x=0.5, len=0.8))
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 
-with col2:
+wwith col2:
     with st.container(border=True, key="plot9"):
-        st.markdown('##### ABC-анализ')
-        ad = df.groupby('ABC').agg(Products=('Product Name', 'nunique'), Sales=('Sales', 'sum'),
-                                   Profit=('Profit', 'sum')).reindex(['Золото', 'Серебро', 'Балласт']).fillna(0)
+        st.markdown('##### Pareto-анализ прибыли')
+        ad = df.groupby('ABC').agg(Products=('Product Name','nunique'), Sales=('Sales','sum'), Profit=('Profit','sum')).reindex(['Золото','Серебро','Балласт']).fillna(0)
 
-        st.markdown("""
-        <div style="display:flex; padding:8px 16px; font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid #e5e7eb; margin-bottom:8px;">
-            <span style="width:35%;">Категория</span><span style="width:15%; text-align:center;">Продуктов</span><span style="width:25%; text-align:center;">Выручка</span><span style="width:25%; text-align:center;">Прибыль</span>
-        </div>""", unsafe_allow_html=True)
+        # Строим Pareto
+        pareto = df.groupby('Product Name')['Profit'].sum().sort_values(ascending=False).reset_index()
+        pareto = pareto[pareto['Profit'] > 0]  # только прибыльные
+        pareto['Cumsum %'] = pareto['Profit'].cumsum() / pareto['Profit'].sum() * 100
+        pareto['N'] = range(1, len(pareto) + 1)
 
-        for abc, emoji, color in [('Золото', '🥇', '#22c55e'), ('Серебро', '🥈', '#f59e0b'), ('Балласт', '🥉', '#ef4444')]:
-            val_p = ad.loc[abc, 'Products']
-            val_s = ad.loc[abc, 'Sales']
-            val_profit = ad.loc[abc, 'Profit']
-            profit_color = '#22c55e' if val_profit >= 0 else '#ef4444'
-            st.markdown(f"""<div style="display:flex; align-items:center; padding:10px 16px; margin:4px 0; border-radius:8px; background:#f8fafc; border:1px solid #e5e7eb;">
-                <span style="font-size:15px; width:35%;">{emoji} <b>{abc}</b></span>
-                <span style="font-size:13px; color:#475569; width:15%; text-align:center;">{val_p:.0f}</span>
-                <span style="font-size:13px; font-weight:600; width:25%; text-align:center;">{currency}{format_k(val_s, currency)}</span>
-                <span style="font-size:13px; font-weight:600; color:{profit_color}; width:25%; text-align:center;">{currency}{format_k(val_profit, currency)}</span>
-            </div>""", unsafe_allow_html=True)
+        # Берём топ-50 для читаемости
+        pareto_short = pareto.head(50)
 
-        st.markdown('<br>', unsafe_allow_html=True)
-        st.markdown('##### ABC структура по выручке')
+        fig = go.Figure()
 
-        gold_sales = ad.loc['Золото', 'Sales']
-        silver_sales = ad.loc['Серебро', 'Sales']
-        bronze_sales = ad.loc['Балласт', 'Sales']
-        total_sales = gold_sales + silver_sales + bronze_sales
+        # Столбцы прибыли
+        fig.add_trace(go.Bar(
+            x=pareto_short['N'],
+            y=pareto_short['Profit'],
+            name='Прибыль',
+            marker_color='#636EFA',
+            opacity=0.8
+        ))
 
-        if total_sales > 0:
-            gold_pct = gold_sales / total_sales * 100
-            silver_pct = silver_sales / total_sales * 100
-            bronze_pct = bronze_sales / total_sales * 100
+        # Линия накопления
+        fig.add_trace(go.Scatter(
+            x=pareto_short['N'],
+            y=pareto_short['Cumsum %'],
+            mode='lines',
+            name='Накопительно %',
+            yaxis='y2',
+            line=dict(width=3, color='#FFA500')
+        ))
 
-            segments = []
-            if gold_pct >= 0.1: segments.append((gold_pct, '#22c55e', '🥇 Золото'))
-            if silver_pct >= 0.1: segments.append((silver_pct, '#f59e0b', '🥈 Серебро'))
-            if bronze_pct >= 0.1: segments.append((bronze_pct, '#ef4444', '🥉 Балласт'))
+        # Линия 80%
+        fig.add_hline(y=80, line_dash="dash", opacity=0.5, line_color="red", yref='y2')
 
-            bar_html = '<div style="display:flex; height:40px; border-radius:8px; overflow:hidden; margin:12px 0 6px 0;">'
-            labels_html = '<div style="display:flex; justify-content:space-between; font-size:11px; color:#6b7280; padding:0 4px;">'
+        fig.update_layout(
+            template=plotly_template,
+            height=400,
+            margin=dict(l=20, r=20, t=20, b=20),
+            xaxis=dict(title='Продукты (по убыванию прибыли)'),
+            yaxis=dict(title='Прибыль'),
+            yaxis2=dict(title='Накопительный %', overlaying='y', side='right', range=[0, 100]),
+            legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1)
+        )
 
-            for pct, seg_color, label in segments:
-                bar_html += f'<div style="width:{pct:.1f}%; background:{seg_color}; display:flex; align-items:center; justify-content:center; color:white; font-weight:600; font-size:13px;">{pct:.1f}%</div>'
-                labels_html += f'<span>{label}</span>'
+        st.plotly_chart(fig, width='stretch', config=plotly_config)
 
-            bar_html += '</div>';
-            labels_html += '</div>'
-            st.markdown(bar_html + labels_html, unsafe_allow_html=True)
+        # KPI под графиком
+        total_products = len(pareto)
+        top10_pct = pareto.head(10)['Profit'].sum() / pareto['Profit'].sum() * 100
+        top30_pct = pareto.head(30)['Profit'].sum() / pareto['Profit'].sum() * 100
+        loss_products = (df.groupby('Product Name')['Profit'].sum() <= 0).sum()
 
-        st.caption('Золото — топ-30 по прибыли | Серебро — остальные прибыльные | Балласт — убыточные')
+        c1, c2, c3 = st.columns(3)
+        c1.metric('Топ-10 продуктов', f'{top10_pct:.0f}% прибыли')
+        c2.metric('Топ-30 продуктов', f'{top30_pct:.0f}% прибыли')
+        c3.metric('Убыточных продуктов', f'{loss_products}')
+
+        st.caption('Pareto показывает концентрацию прибыли. Оранжевая линия пересекает 80% — столько продуктов создают 80% прибыли.')
 # =========================================================
 # РЯД 3: Топ-10 + Топ-10 убыточных
 # =========================================================
@@ -386,18 +395,71 @@ with col1:
     with st.container(border=True, key="plot7"):
         st.markdown('##### Скидки vs Прибыль')
         dp = df.copy()
-        dp['DL'] = pd.cut(dp['Discount'], bins=[-0.01, 0.05, 0.2, 0.5, 1], labels=['Без скидки','0-5%','5-20%','20%+'])
-        fig = px.scatter(dp, x='Discount', y='Profit', color='Profit', template=plotly_template, opacity=0.7, color_continuous_scale=['red','yellow','green'])
-        fig.update_traces(selector=dict(mode='markers'), marker=dict(size=15, coloraxis='coloraxis'))
-        fig.add_hline(y=0, line_dash="dash", line_color="black", opacity=0.5)
-        fig.update_layout(
-            height=400,
-            xaxis=dict(title='Скидка %', tickformat='.0%', range=[-0.05, 0.85]),
-            yaxis=dict(title='Прибыль'),
-            coloraxis_showscale=False,
-            margin=dict(l=20, r=20, t=20, b=20)
-        )
-        st.plotly_chart(fig, width='stretch', config=plotly_config)
+
+        disc_tab1, disc_tab2 = st.tabs(['График', 'Таблица'])
+
+        with disc_tab1:
+            dp['Скидка группа'] = pd.cut(
+                dp['Discount'],
+                bins=[-0.01, 0.00, 0.20, 0.40, 0.60, 0.80],
+                labels=['0%', '0–20%', '20–40%', '40–60%', '60–80%'],
+                include_lowest=True
+            )
+            avg_line = dp.groupby('Скидка группа', observed=False).agg(
+                Sales=('Sales', 'sum'),
+                Profit=('Profit', 'sum'),
+                Orders=('Order ID', 'nunique')
+            ).reset_index()
+            avg_line['Рентабельность %'] = avg_line['Profit'] / avg_line['Sales'] * 100
+            colors_line = ['#00CC96' if x > 0 else '#EF553B' for x in avg_line['Рентабельность %']]
+
+            fig = go.Figure()
+            fig.add_trace(go.Bar(
+                x=avg_line['Скидка группа'],
+                y=avg_line['Рентабельность %'],
+                marker_color=colors_line,
+                text=avg_line['Рентабельность %'].apply(lambda x: f'{x:+.1f}%'),
+                textposition='outside'
+            ))
+            fig.add_hline(y=0, line_dash="dash", line_color="black")
+            fig.update_layout(
+                height=400,
+                xaxis=dict(title='Размер скидки'),
+                yaxis=dict(title='Прибыль %', ticksuffix='%'),
+                margin=dict(l=20, r=20, t=20, b=20),
+                template=plotly_template
+            )
+            st.plotly_chart(fig, width='stretch', config=plotly_config)
+            st.caption('С ростом скидки рентабельность падает. Группы 20–40% и выше — убыточны.')
+
+        with disc_tab2:
+            dp['Скидка группа'] = pd.cut(
+                dp['Discount'],
+                bins=[-0.01, 0.00, 0.20, 0.40, 0.60, 0.80],
+                labels=['0%', '0–20%', '20–40%', '40–60%', '60–80%'],
+                include_lowest=True
+            )
+            table_data = dp.groupby('Скидка группа', observed=False).agg(
+                Выручка=('Sales', 'sum'),
+                Прибыль=('Profit', 'sum'),
+                Заказов=('Order ID', 'nunique')
+            ).reset_index()
+            table_data['Рентабельность %'] = table_data['Прибыль'] / table_data['Выручка'] * 100
+
+            table_data['Выручка'] = table_data['Выручка'].apply(lambda x: format_k(x, currency))
+            table_data['Прибыль'] = table_data['Прибыль'].apply(lambda x: format_k(x, currency))
+            table_data['Рентабельность %'] = table_data['Рентабельность %'].apply(lambda x: f'{x:+.1f}%')
+
+            # CSS для выравнивания по центру
+            st.markdown("""
+            <style>
+            .st-key-plot7 table td, .st-key-plot7 table th {
+                text-align: center !important;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+
+            st.dataframe(table_data, use_container_width=True, hide_index=True)
 with col2:
     with st.container(border=True, key="plot8"):
         st.markdown('##### Топ-20 клиентов')
