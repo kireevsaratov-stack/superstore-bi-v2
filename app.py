@@ -67,14 +67,11 @@ MONTH_NAMES = {
     7: 'Июл', 8: 'Авг', 9: 'Сен', 10: 'Окт', 11: 'Ноя', 12: 'Дек'
 }
 
-
 def safe_div(a, b): return a / b if b not in [0, None, np.nan] else 0
-
 
 def format_k(value, currency):
     if abs(value) >= 1000: return f"{currency}{value / 1000:,.0f}K"
     return f"{currency}{value:,.0f}"
-
 
 # =========================================================
 # EXCHANGE RATES
@@ -93,7 +90,6 @@ def get_exchange_rates():
                 pass
     return rates
 
-
 @st.cache_data(show_spinner=False)
 def load_data():
     df = pd.read_csv('Sample - Superstore.csv', encoding='latin1')
@@ -106,7 +102,6 @@ def load_data():
     df['Margin %'] = np.where(df['Sales'] != 0, (df['Profit'] / df['Sales']) * 100, 0).round(1)
     return df
 
-
 def convert_to_rub(df, rates):
     t = df.copy()
     t['Month_Key'] = t['Order Date'].dt.strftime('%Y-%m-01')
@@ -114,7 +109,6 @@ def convert_to_rub(df, rates):
     t['Sales'] *= t['Rate']
     t['Profit'] *= t['Rate']
     return t
-
 
 rates = get_exchange_rates()
 df_raw = load_data()
@@ -168,18 +162,13 @@ if len(years) >= 2:
         orders_delta = orders - prev_orders
         customers_delta = customers - prev_customers
 
-
 def delta_html(value, currency='$'):
     if len(years) < 2: return ''
-    if value > 0:
-        color, bg, arrow, sign = '#22c55e', '#f0fdf4', '↑', '+'
-    elif value < 0:
-        color, bg, arrow, sign = '#ef4444', '#fef2f2', '↓', ''
-    else:
-        return ''
+    if value > 0: color, bg, arrow, sign = '#22c55e', '#f0fdf4', '↑', '+'
+    elif value < 0: color, bg, arrow, sign = '#ef4444', '#fef2f2', '↓', ''
+    else: return ''
     formatted = format_k(abs(value), currency) if abs(value) >= 1000 else f'{currency}{abs(value):,.0f}'
     return f'<span style="color:{color};background:{bg};padding:2px 8px;border-radius:4px;font-size:13px;">{arrow} {sign}{formatted}</span>'
-
 
 html_parts = ['<div class="year-summary">']
 for label, val, d, cur in [
@@ -209,21 +198,18 @@ plotly_config = {'staticPlot': True, 'responsive': True, 'displayModeBar': False
 col1, col2 = st.columns(2)
 with col1:
     with st.container(border=True, key="plot1"):
-        st.markdown('##### Продажи и Прибыль по месяцам')
+        st.markdown('##### Продажи и прибыль по месяцам')
         fig = go.Figure(layout=dict(template=plotly_template))
-        fig.add_trace(go.Scatter(x=monthly['Order Date'], y=monthly['Sales'], name='Продажи', fill='tozeroy',
-                                 line=dict(color='#1a56db')))
-        fig.add_trace(go.Scatter(x=monthly['Order Date'], y=monthly['Profit'], name='Прибыль', fill='tozeroy',
-                                 line=dict(color='#00CC96')))
+        fig.add_trace(go.Scatter(x=monthly['Order Date'], y=monthly['Sales'], name='Продажи', fill='tozeroy', line=dict(color='#1a56db')))
+        fig.add_trace(go.Scatter(x=monthly['Order Date'], y=monthly['Profit'], name='Прибыль', fill='tozeroy', line=dict(color='#00CC96')))
         total_months = len(monthly)
         tick_spacing = 1 if total_months <= 12 else 2 if total_months <= 24 else 3 if total_months <= 36 else 4
         tick_indices = list(range(0, total_months, tick_spacing))
         tick_texts = [monthly['Order Date'].iloc[i] for i in tick_indices]
         tick_vals = [monthly['Order Date'].iloc[i] for i in tick_indices]
         fig.update_layout(
-            height=400, hovermode='x unified', margin=dict(l=20, r=20, t=20, b=30),
-            xaxis=dict(showgrid=True, gridcolor='rgba(128,128,128,0.2)', tickmode='array', tickvals=tick_vals,
-                       ticktext=tick_texts),
+            height=400, hovermode='x unified', margin=dict(l=0, r=0, t=20, b=30),
+            xaxis=dict(showgrid=True, gridcolor='rgba(128,128,128,0.2)', tickmode='array', tickvals=tick_vals, ticktext=tick_texts),
             yaxis=dict(showgrid=True, gridcolor='rgba(128,128,128,0.1)'),
             legend=dict(orientation='h', yanchor='top', y=-0.2, xanchor='center', x=0.5)
         )
@@ -236,9 +222,8 @@ with col2:
         fig = px.sunburst(sd, path=['Category', 'Sub-Category'], values='Sales', color='Profit',
                           template=plotly_template, color_continuous_scale=[[0, '#EF553B'], [0.5, '#fecaca'], [0.5, '#bbf7d0'], [1, '#00CC96']],
                           range_color=[sd['Profit'].min(), sd['Profit'].max()], maxdepth=2)
-        fig.update_traces(textinfo='label+percent parent', textfont=dict(size=12),
-                          hovertemplate='<b>%{label}</b><br>Выручка: %{value:,.0f}<br>Прибыль: %{color:,.0f}<extra></extra>')
-        fig.update_layout(height=400, margin=dict(l=20, r=20, t=20, b=20), showlegend=False, coloraxis_showscale=False)
+        fig.update_traces(textinfo='label+percent parent', textfont=dict(size=12))
+        fig.update_layout(height=400, margin=dict(l=0, r=0, t=20, b=0), showlegend=False, coloraxis_showscale=False)
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 
 # =========================================================
@@ -250,19 +235,16 @@ with col1:
         st.markdown('##### Сезонность')
         hd = df.pivot_table(values='Sales', index='Month', columns='Year', aggfunc='sum')
         hd.index = [MONTH_NAMES[m] for m in hd.index]
-        fig = px.imshow(hd, aspect='auto', color_continuous_scale=[[0, '#e8f0ff'], [1, '#1a56db']],
-                        template=plotly_template)
-        fig.update_traces(text=[[f"{currency}{v / 1000:,.0f}K" for v in r] for r in hd.values], texttemplate="%{text}",
-                          textfont=dict(size=11))
+        fig = px.imshow(hd, aspect='auto', color_continuous_scale=[[0, '#e8f0ff'], [1, '#1a56db']], template=plotly_template)
+        fig.update_traces(text=[[f"{currency}{v/1000:,.0f}K" for v in r] for r in hd.values], texttemplate="%{text}", textfont=dict(size=11))
         fig.update_xaxes(side='top', title='Год', tickformat='d', dtick=1)
-        fig.update_layout(height=400, margin=dict(l=20, r=20, t=20, b=20), coloraxis_showscale=True,
-                          coloraxis_colorbar=dict(title='Продажи', orientation='h', yanchor='bottom', y=-0.3,
-                                                  xanchor='center', x=0.5, len=0.8))
+        fig.update_layout(height=400, margin=dict(l=0, r=0, t=20, b=0), coloraxis_showscale=True,
+                          coloraxis_colorbar=dict(title='Продажи', orientation='h', yanchor='bottom', y=-0.3, xanchor='center', x=0.5, len=0.8))
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 
 with col2:
     with st.container(border=True, key="plot9"):
-        st.markdown('##### Pareto: концентрация прибыли')
+        st.markdown('##### Парето: концентрация прибыли')
         pareto = df.groupby('Product Name')['Profit'].sum().sort_values(ascending=False).reset_index()
         total_profit = pareto['Profit'].sum()
         pareto['Cumsum %'] = pareto['Profit'].cumsum() / total_profit * 100
@@ -278,20 +260,18 @@ with col2:
         fig.add_trace(go.Scatter(x=pareto_short['N'], y=pareto_short['Cumsum %'], mode='lines',
                                  name='Накопительно %', yaxis='y2', line=dict(width=3, color='#636EFA')))
         fig.add_hline(y=80, line_dash="dash", opacity=0.5, line_color="gray", yref='y2')
-        fig.update_layout(template=plotly_template, height=400, margin=dict(l=20, r=20, t=20, b=20),
+        fig.update_layout(template=plotly_template, height=400, margin=dict(l=0, r=0, t=20, b=0),
                           xaxis=dict(title=f'Продукты (первые {products_80} из {len(pareto)})', showgrid=False),
                           yaxis=dict(title='Прибыль', showgrid=False),
                           yaxis2=dict(title='Накопительный %', overlaying='y', side='right', range=[0, 100],
-                                      tickmode='linear', tick0=0, dtick=20, showgrid=False),
+                                     tickmode='linear', tick0=0, dtick=20, showgrid=False),
                           legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1), bargap=0.3)
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 
         c1, c2, c3 = st.columns(3)
         c1.metric('Всего продуктов', f'{len(pareto)}')
         c2.metric(f'Дают 80% прибыли', f'{products_80}')
-        c3.metric(f'Убыточных продуктов', f'{len(loss)}')
-
-
+        c3.metric('Убыточных продуктов', f'{len(loss)}')
 
 # =========================================================
 # РЯД 3: Топ-10 + Топ-10 убыточных
@@ -301,38 +281,26 @@ with col1:
     with st.container(border=True, key="plot5"):
         st.markdown('##### Топ-10 продуктов по выручке')
         t10 = df.groupby('Product Name')['Sales'].sum().nlargest(10).reset_index()
-        t10['Product Name'] = t10['Product Name'].apply(lambda x: x[:25] + '...' if len(x) > 25 else x)
+        t10['Product Name'] = t10['Product Name'].apply(lambda x: x[:30] + '...' if len(x) > 30 else x)
         fig = px.bar(t10, x='Sales', y='Product Name', orientation='h', template=plotly_template,
                      color='Sales', color_continuous_scale=[[0, '#e8f0ff'], [1, '#1a56db']],
                      labels={'Sales': 'Продажи', 'Product Name': ''})
-        fig.update_traces(text=t10['Sales'].apply(lambda x: f'{format_k(x, currency)}'), textposition='outside',
-                          textfont=dict(size=11))
-        fig.update_layout(
-            yaxis={'categoryorder': 'total ascending', 'tickfont': dict(size=10)},
-            xaxis=dict(range=[0, t10['Sales'].max() * 1.15]),
-            coloraxis_showscale=False,
-            height=400,
-            margin=dict(l=0, r=0, t=20, b=0)
-        )
+        fig.update_traces(text=t10['Sales'].apply(lambda x: f'{format_k(x, currency)}'), textposition='outside', textfont=dict(size=11))
+        fig.update_layout(yaxis={'categoryorder': 'total ascending'}, xaxis=dict(range=[0, t10['Sales'].max() * 1.15]),
+                          coloraxis_showscale=False, height=400, margin=dict(l=0, r=0, t=20, b=0))
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 
 with col2:
     with st.container(border=True, key="plot6"):
         st.markdown('##### Топ-10 убыточных продуктов')
         l10 = df.groupby('Product Name')['Profit'].sum().nsmallest(10).reset_index()
-        l10['Product Name'] = l10['Product Name'].apply(lambda x: x[:25] + '...' if len(x) > 25 else x)
+        l10['Product Name'] = l10['Product Name'].apply(lambda x: x[:30] + '...' if len(x) > 30 else x)
         fig = px.bar(l10, x='Profit', y='Product Name', orientation='h', template=plotly_template,
                      color='Profit', color_continuous_scale='Reds_r', labels={'Profit': 'Прибыль', 'Product Name': ''})
-        fig.update_traces(text=l10['Profit'].apply(lambda x: f'-{format_k(abs(x), currency)}'), textposition='outside',
-                          textfont=dict(size=11))
-        fig.update_layout(
-            yaxis={'categoryorder': 'total descending', 'automargin': True},
-            xaxis=dict(range=[l10['Profit'].min() * 1.15, 0], tickmode='array',
-                       tickvals=[-8000, -6000, -4000, -2000, 0], ticktext=['-8K', '-6K', '-4K', '-2K', '0']),
-            coloraxis_showscale=False,
-            height=400,
-            margin=dict(l=20, r=20, t=20, b=20)
-        )
+        fig.update_traces(text=l10['Profit'].apply(lambda x: f'-{format_k(abs(x), currency)}'), textposition='outside', textfont=dict(size=11))
+        fig.update_layout(yaxis={'categoryorder': 'total descending'}, xaxis=dict(range=[l10['Profit'].min() * 1.15, 0],
+                          tickmode='array', tickvals=[-8000, -6000, -4000, -2000, 0], ticktext=['-8K', '-6K', '-4K', '-2K', '0']),
+                          coloraxis_showscale=False, height=400, margin=dict(l=0, r=0, t=20, b=0))
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 
 # =========================================================
@@ -347,32 +315,26 @@ with col1:
         with disc_tab1:
             dp['Скидка группа'] = pd.cut(dp['Discount'], bins=[-0.01, 0.00, 0.20, 0.40, 0.60, 0.80],
                                          labels=['0%', '0–20%', '20–40%', '40–60%', '60–80%'], include_lowest=True)
-            avg_line = dp.groupby('Скидка группа', observed=False).agg(Sales=('Sales', 'sum'), Profit=('Profit', 'sum'),
-                                                                       Orders=('Order ID', 'nunique')).reset_index()
+            avg_line = dp.groupby('Скидка группа', observed=False).agg(Sales=('Sales', 'sum'), Profit=('Profit', 'sum'), Orders=('Order ID', 'nunique')).reset_index()
             avg_line['Рентабельность %'] = avg_line['Profit'] / avg_line['Sales'] * 100
             colors_line = ['#00CC96' if x > 0 else '#EF553B' for x in avg_line['Рентабельность %']]
             fig = go.Figure()
             fig.add_trace(go.Bar(x=avg_line['Скидка группа'], y=avg_line['Рентабельность %'], marker_color=colors_line,
-                                 text=avg_line['Рентабельность %'].apply(lambda x: f'{x:+.1f}%'),
-                                 textposition='outside'))
+                                 text=avg_line['Рентабельность %'].apply(lambda x: f'{x:+.1f}%'), textposition='outside'))
             fig.add_hline(y=0, line_dash="dash", line_color="#d1d5db", opacity=0.4)
-            fig.update_layout(height=400, xaxis=dict(title='Размер скидки'),
-                              yaxis=dict(title='Прибыль %', ticksuffix='%'),
-                              margin=dict(l=20, r=20, t=20, b=20), template=plotly_template)
+            fig.update_layout(height=400, xaxis=dict(title='Размер скидки'), yaxis=dict(title='Прибыль %', ticksuffix='%'),
+                              margin=dict(l=0, r=0, t=20, b=0), template=plotly_template)
             st.plotly_chart(fig, width='stretch', config=plotly_config)
             st.caption('С ростом скидки рентабельность падает. Группы 20–40% и выше — убыточны.')
         with disc_tab2:
             dp['Скидка группа'] = pd.cut(dp['Discount'], bins=[-0.01, 0.00, 0.20, 0.40, 0.60, 0.80],
                                          labels=['0%', '0–20%', '20–40%', '40–60%', '60–80%'], include_lowest=True)
-            table_data = dp.groupby('Скидка группа', observed=False).agg(Выручка=('Sales', 'sum'),
-                                                                         Прибыль=('Profit', 'sum'),
-                                                                         Заказов=('Order ID', 'nunique')).reset_index()
+            table_data = dp.groupby('Скидка группа', observed=False).agg(Выручка=('Sales', 'sum'), Прибыль=('Profit', 'sum'), Заказов=('Order ID', 'nunique')).reset_index()
             table_data['Рентабельность %'] = table_data['Прибыль'] / table_data['Выручка'] * 100
             table_data['Выручка'] = table_data['Выручка'].apply(lambda x: format_k(x, currency))
             table_data['Прибыль'] = table_data['Прибыль'].apply(lambda x: format_k(x, currency))
             table_data['Рентабельность %'] = table_data['Рентабельность %'].apply(lambda x: f'{x:+.1f}%')
-            st.markdown("<style>.st-key-plot7 table td, .st-key-plot7 table th {text-align:center!important;}</style>",
-                        unsafe_allow_html=True)
+            st.markdown("<style>.st-key-plot7 table td, .st-key-plot7 table th {text-align:center!important;}</style>", unsafe_allow_html=True)
             st.dataframe(table_data, use_container_width=True, hide_index=True)
 
 with col2:
@@ -384,13 +346,11 @@ with col2:
         colors = ['#00CC96' if x > 0 else '#EF553B' for x in tc['Total_Profit']]
         fig = go.Figure()
         fig.add_trace(go.Bar(y=tc['Customer_Name'], x=tc['Total_Sales'], orientation='h', marker_color=colors,
-                             text=tc['Total_Sales'].apply(lambda x: f'{format_k(x, currency)}'), textposition='outside',
-                             textfont=dict(size=11)))
-        fig.update_layout(yaxis={'categoryorder': 'total ascending', 'automargin': True}, height=400,
-                          showlegend=False, margin=dict(l=20, r=20, t=20, b=20),
-                          xaxis=dict(range=[0, tc['Total_Sales'].max() * 1.15]), template=plotly_template)
+                             text=tc['Total_Sales'].apply(lambda x: f'{format_k(x, currency)}'), textposition='outside', textfont=dict(size=11)))
+        fig.update_layout(yaxis={'categoryorder': 'total ascending'}, height=400, showlegend=False,
+                          margin=dict(l=0, r=0, t=20, b=0), xaxis=dict(range=[0, tc['Total_Sales'].max() * 1.15]), template=plotly_template)
         st.plotly_chart(fig, width='stretch', config=plotly_config)
-        st.caption('Красным выделены покупатели с отрицательной прибылью для магазина (убыток)')
+        st.caption('Красным — покупатели с отрицательной прибылью (убыток)')
 
 # =========================================================
 # РЯД 5: ПРОГНОЗ + БЭКТЕСТИНГ
@@ -399,7 +359,6 @@ with st.container(border=True, key="plot11"):
     st.markdown('##### Прогноз продаж на 2018 год')
     try:
         from statsmodels.tsa.holtwinters import ExponentialSmoothing
-
         mp = df.groupby(df['Order Date'].dt.to_period('M'))['Sales'].sum().reset_index()
         mp['Order Date'] = mp['Order Date'].astype(str)
         mv = mp['Sales'].values.astype(float)
@@ -420,9 +379,8 @@ with st.container(border=True, key="plot11"):
         c3.metric('Прогноз заказов', f'{fo:,.0f}')
         fig = go.Figure(layout=dict(template=plotly_template))
         fig.add_trace(go.Scatter(x=fd, y=fv, mode='lines', name='Прогноз', line=dict(color='#FFA500', width=2)))
-        fig.add_trace(go.Scatter(x=pd.to_datetime(mp['Order Date']), y=mv, mode='markers+lines', name='История',
-                                 line=dict(color='#00CC96', width=2)))
-        fig.update_layout(height=400, hovermode='x unified', margin=dict(l=20, r=20, t=20, b=30),
+        fig.add_trace(go.Scatter(x=pd.to_datetime(mp['Order Date']), y=mv, mode='markers+lines', name='История', line=dict(color='#00CC96', width=2)))
+        fig.update_layout(height=400, hovermode='x unified', margin=dict(l=0, r=0, t=20, b=30),
                           legend=dict(orientation='h', yanchor='top', y=-0.2, xanchor='center', x=0.5))
         st.plotly_chart(fig, width='stretch', config=plotly_config)
         st.markdown("""<div style="font-size:13px; color:#475569; line-height:1.7; margin-top:12px;">
@@ -443,16 +401,13 @@ with st.container(border=True, key="plot11"):
             mape = np.mean(np.abs((test - fb) / test)) * 100
             td = pd.to_datetime(mp['Order Date'].iloc[-12:])
             fig_bt = go.Figure(layout=dict(template=plotly_template))
-            fig_bt.add_trace(
-                go.Scatter(x=td, y=test, mode='lines+markers', name='Факт', line=dict(color='#00CC96', width=2)))
-            fig_bt.add_trace(go.Scatter(x=td, y=fb, mode='lines+markers', name='Прогноз',
-                                        line=dict(color='#FFA500', width=2, dash='dash')))
-            fig_bt.update_layout(height=350, hovermode='x unified', margin=dict(l=20, r=20, t=20, b=30),
+            fig_bt.add_trace(go.Scatter(x=td, y=test, mode='lines+markers', name='Факт', line=dict(color='#00CC96', width=2)))
+            fig_bt.add_trace(go.Scatter(x=td, y=fb, mode='lines+markers', name='Прогноз', line=dict(color='#FFA500', width=2, dash='dash')))
+            fig_bt.update_layout(height=350, hovermode='x unified', margin=dict(l=0, r=0, t=20, b=30),
                                  legend=dict(orientation='h', yanchor='top', y=-0.2, xanchor='center', x=0.5))
             st.plotly_chart(fig_bt, width='stretch', config=plotly_config)
             st.caption(f'MAE: {format_k(mae, currency)} | MAPE: {mape:.1f}%')
-            st.caption(
-                'Бэктестинг проверяет точность модели: обучаем на прошлых периодах и сравниваем прогноз с реальными данными.')
+            st.caption('Бэктестинг проверяет точность модели: обучаем на прошлых периодах и сравниваем прогноз с реальными данными.')
         else:
             st.info('Для бэктестинга необходимо минимум 24 месяца данных. Выберите больше годов.')
     except Exception as e:
