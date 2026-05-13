@@ -290,9 +290,7 @@ with col2:
         c1.metric('Всего продуктов', f'{len(pareto)}')
         c2.metric(f'Дают 80% прибыли', f'{products_80}')
         c3.metric(f'Убыточных продуктов', f'{len(loss)}')
-        st.markdown(
-            f'<p style="text-align:center;font-size:12px;color:#6b7280;margin-top:-10px;">{format_k(loss["Profit"].sum(), currency)}</p>',
-            unsafe_allow_html=True)
+
 
 
 # =========================================================
