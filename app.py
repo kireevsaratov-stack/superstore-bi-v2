@@ -214,6 +214,7 @@ with col1:
             legend=dict(orientation='h', yanchor='top', y=-0.2, xanchor='center', x=0.5)
         )
         st.plotly_chart(fig, width='stretch', config=plotly_config)
+        st.caption('Цветовая дифференциация по прибыльности категорий')
 
 with col2:
     with st.container(border=True, key="plot2"):
@@ -281,13 +282,18 @@ with col1:
     with st.container(border=True, key="plot5"):
         st.markdown('##### Топ-10 продуктов по выручке')
         t10 = df.groupby('Product Name')['Sales'].sum().nlargest(10).reset_index()
-        t10['Product Name'] = t10['Product Name'].apply(lambda x: x[:30] + '...' if len(x) > 30 else x)
+        t10['Product Name'] = t10['Product Name'].apply(lambda x: x[:18] + '...' if len(x) > 18 else x)
         fig = px.bar(t10, x='Sales', y='Product Name', orientation='h', template=plotly_template,
                      color='Sales', color_continuous_scale=[[0, '#e8f0ff'], [1, '#1a56db']],
                      labels={'Sales': 'Продажи', 'Product Name': ''})
         fig.update_traces(text=t10['Sales'].apply(lambda x: f'{format_k(x, currency)}'), textposition='outside', textfont=dict(size=11))
-        fig.update_layout(yaxis={'categoryorder': 'total ascending'}, xaxis=dict(range=[0, t10['Sales'].max() * 1.15]),
-                          coloraxis_showscale=False, height=400, margin=dict(l=0, r=0, t=20, b=0))
+        fig.update_layout(
+            yaxis={'categoryorder': 'total ascending', 'automargin': False, 'tickfont': dict(size=9)},
+            xaxis=dict(range=[0, t10['Sales'].max() * 1.2]),
+            coloraxis_showscale=False,
+            height=400,
+            margin=dict(l=5, r=5, t=20, b=0)
+        )
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 
 with col2:
