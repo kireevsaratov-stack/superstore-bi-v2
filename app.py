@@ -283,68 +283,59 @@ with col1:
                                                   xanchor='center', x=0.5, len=0.8))
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 
-wwith col2:
+with col2:
     with st.container(border=True, key="plot9"):
-        st.markdown('##### Pareto-анализ прибыли')
-        ad = df.groupby('ABC').agg(Products=('Product Name','nunique'), Sales=('Sales','sum'), Profit=('Profit','sum')).reindex(['Золото','Серебро','Балласт']).fillna(0)
+        st.markdown('##### Pareto: концентрация прибыли')
 
-        # Строим Pareto
         pareto = df.groupby('Product Name')['Profit'].sum().sort_values(ascending=False).reset_index()
-        pareto = pareto[pareto['Profit'] > 0]  # только прибыльные
-        pareto['Cumsum %'] = pareto['Profit'].cumsum() / pareto['Profit'].sum() * 100
+        total_profit = pareto['Profit'].sum()
+        pareto['Cumsum %'] = pareto['Profit'].cumsum() / total_profit * 100
         pareto['N'] = range(1, len(pareto) + 1)
 
-        # Берём топ-50 для читаемости
-        pareto_short = pareto.head(50)
+        products_80 = (pareto['Cumsum %'] <= 80).sum()
+        pareto_short = pareto.head(products_80)
+        loss = pareto[pareto['Profit'] <= 0]
 
         fig = go.Figure()
 
-        # Столбцы прибыли
         fig.add_trace(go.Bar(
             x=pareto_short['N'],
             y=pareto_short['Profit'],
             name='Прибыль',
-            marker_color='#636EFA',
-            opacity=0.8
+            marker_color=['#22c55e' if x > 0 else '#ef4444' for x in pareto_short['Profit']],
+            hovertemplate='Продукт #%{x}<br>Прибыль: %{y:,.0f}<extra></extra>'
         ))
 
-        # Линия накопления
         fig.add_trace(go.Scatter(
             x=pareto_short['N'],
             y=pareto_short['Cumsum %'],
             mode='lines',
             name='Накопительно %',
             yaxis='y2',
-            line=dict(width=3, color='#FFA500')
+            line=dict(width=3, color='#636EFA')
         ))
 
-        # Линия 80%
-        fig.add_hline(y=80, line_dash="dash", opacity=0.5, line_color="red", yref='y2')
+        fig.add_hline(y=80, line_dash="dash", opacity=0.5, line_color="gray", yref='y2')
 
         fig.update_layout(
             template=plotly_template,
             height=400,
             margin=dict(l=20, r=20, t=20, b=20),
-            xaxis=dict(title='Продукты (по убыванию прибыли)'),
-            yaxis=dict(title='Прибыль'),
-            yaxis2=dict(title='Накопительный %', overlaying='y', side='right', range=[0, 100]),
-            legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1)
+            xaxis=dict(title=f'Продукты (первые {products_80} из {len(pareto)})', showgrid=False),
+            yaxis=dict(title='Прибыль', showgrid=False),
+            yaxis2=dict(title='Накопительный %', overlaying='y', side='right', range=[0, 100],
+                        tickmode='linear', tick0=0, dtick=20, showgrid=False),
+            legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
+            bargap=0.3
         )
 
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 
-        # KPI под графиком
-        total_products = len(pareto)
-        top10_pct = pareto.head(10)['Profit'].sum() / pareto['Profit'].sum() * 100
-        top30_pct = pareto.head(30)['Profit'].sum() / pareto['Profit'].sum() * 100
-        loss_products = (df.groupby('Product Name')['Profit'].sum() <= 0).sum()
-
         c1, c2, c3 = st.columns(3)
-        c1.metric('Топ-10 продуктов', f'{top10_pct:.0f}% прибыли')
-        c2.metric('Топ-30 продуктов', f'{top30_pct:.0f}% прибыли')
-        c3.metric('Убыточных продуктов', f'{loss_products}')
-
-        st.caption('Pareto показывает концентрацию прибыли. Оранжевая линия пересекает 80% — столько продуктов создают 80% прибыли.')
+        c1.metric('Всего продуктов', f'{len(pareto)}')
+        c2.metric(f'Дают 80% прибыли', f'{products_80}')
+        c3.metric(f'Убыточных продуктов', f'{len(loss)}', delta=f'-{format_k(abs(loss["Profit"].sum()), currency)}',
+                  delta_color='off')
 # =========================================================
 # РЯД 3: Топ-10 + Топ-10 убыточных
 # =========================================================
