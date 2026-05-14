@@ -285,232 +285,27 @@ with col2:
         c3.metric('Убыточных продуктов', f'{len(loss)}')
 
 # =========================================================
-# РЯД 3: Топ-15 продуктов (3 вида)
+# РЯД 3: Топ-15 + Топ-15 убыточных
 # =========================================================
-with st.container(border=True, key="plot5"):
-    st.markdown('##### Топ-15 продуктов по выручке')
-
-    # Переключатель вида
-    view_tab1, view_tab2, view_tab3 = st.tabs(['📊 Bar Chart', '📈 Рейтинг с трендами', '🗺️ Матрица продуктов'])
-
-    # Подготавливаем данные один раз
-    top_data = df.groupby('Product Name').agg(
-        Total_Sales=('Sales', 'sum'),
-        Total_Profit=('Profit', 'sum'),
-        Orders=('Order ID', 'nunique'),
-        Avg_Discount=('Discount', 'mean'),
-        Category=('Category', 'first')
-    ).reset_index()
-
-    top_data['Margin %'] = (top_data['Total_Profit'] / top_data['Total_Sales'] * 100).round(1)
-
-    # Рассчитываем тренды для sparkline (общие для вариантов 1 и 2)
-    monthly_trends = {}
-    top_15_products = top_data.nlargest(15, 'Total_Sales')
-    for product in top_15_products['Product Name']:
-        product_data = df[df['Product Name'] == product]
-        monthly_sales = product_data.groupby(product_data['Order Date'].dt.to_period('M'))['Sales'].sum()
-        monthly_trends[product] = monthly_sales.values
-
-    # ============================================
-    # ВАРИАНТ 1: Оригинальный Bar Chart
-    # ============================================
-    with view_tab1:
-        t10 = top_data.nlargest(15, 'Total_Sales').copy()
+col1, col2 = st.columns(2)
+with col1:
+    with st.container(border=True, key="plot5"):
+        st.markdown('##### Топ-15 продуктов по выручке')
+        t10 = df.groupby('Product Name')['Sales'].sum().nlargest(15).reset_index()
         t10['Product Name'] = t10['Product Name'].apply(lambda x: x[:25] + '...' if len(x) > 25 else x)
-
-        fig = px.bar(t10, x='Total_Sales', y='Product Name', orientation='h', template=plotly_template,
+        fig = px.bar(t10, x='Sales', y='Product Name', orientation='h', template=plotly_template,
                      color_discrete_sequence=['#1a56db'] * 10,
-                     labels={'Total_Sales': 'Продажи', 'Product Name': ''})
-
-        fig.update_traces(
-            text=t10['Total_Sales'].apply(lambda x: f'{format_k(x, currency)}'),
-            textposition='inside',
-            textfont=dict(size=11, color='white'),
-            hovertemplate='<b>%{y}</b><br>Выручка: %{x:,.0f}<br>Прибыль: %{customdata[0]:,.0f}<br>Маржа: %{customdata[1]:.1f}%<extra></extra>',
-            customdata=t10[['Total_Profit', 'Margin %']]
-        )
-
+                     labels={'Sales': 'Продажи', 'Product Name': ''})
+        fig.update_traces(text=t10['Sales'].apply(lambda x: f'{format_k(x, currency)}'), textposition='inside',
+                          textfont=dict(size=11, color='white'))
         fig.update_layout(
             yaxis={'categoryorder': 'total ascending', 'automargin': True, 'tickfont': dict(size=10)},
-            xaxis=dict(range=[0, t10['Total_Sales'].max() * 1.15]),
+            xaxis=dict(range=[0, t10['Sales'].max() * 1.15]),
             coloraxis_showscale=False,
             height=400,
             margin=dict(l=0, r=0, t=20, b=0)
         )
-
         st.plotly_chart(fig, width='stretch', config=plotly_config)
-
-        # Сводка под графиком
-        col_a, col_b, col_c = st.columns(3)
-        with col_a:
-            st.metric("Средняя маржа Топ-15", f"{t10['Margin %'].mean():.1f}%")
-        with col_b:
-            st.metric("Средний чек", format_k(t10['Total_Sales'].mean(), currency))
-        with col_c:
-            st.metric("Средняя скидка", f"{t10['Avg_Discount'].mean() * 100:.1f}%")
-
-    # ============================================
-    # ВАРИАНТ 2: Рейтинг с трендами
-    # ============================================
-    with view_tab2:
-        st.caption('💡 Зеленый тренд — растущий продукт, красный — падающий. Размер кружка = кол-во заказов')
-
-        # Создаем компактную визуализацию
-        for idx, (_, row) in enumerate(top_15_products.iterrows()):
-            col_name, col_trend, col_kpis = st.columns([3, 2, 3])
-
-            with col_name:
-                product_name = row['Product Name'][:30] + '...' if len(row['Product Name']) > 30 else row[
-                    'Product Name']
-                st.markdown(f"**{idx + 1}. {product_name}**")
-                st.caption(f"{row['Category']} | Маржа: {row['Margin %']:+.1f}%")
-
-            with col_trend:
-                # Мини-график тренда
-                trend_data = monthly_trends[row['Product Name']]
-
-                # Определяем тренд (растет или падает)
-                if len(trend_data) >= 3:
-                    trend_direction = "↑" if trend_data[-1] > trend_data[0] else "↓"
-                    trend_color = '#00CC96' if trend_data[-1] > trend_data[0] else '#EF553B'
-                else:
-                    trend_direction = "→"
-                    trend_color = '#94a3b8'
-
-                fig_spark = go.Figure()
-                fig_spark.add_trace(go.Scatter(
-                    y=trend_data,
-                    mode='lines',
-                    line=dict(color=trend_color, width=1.5),
-                    fill='tozeroy',
-                    fillcolor=f'rgba({"0,204,150" if trend_color == "#00CC96" else "239,85,59"}, 0.1)'
-                ))
-                fig_spark.update_layout(
-                    height=30,
-                    width=200,
-                    margin=dict(l=0, r=0, t=0, b=0),
-                    xaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
-                    yaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
-                    showlegend=False,
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)'
-                )
-                st.plotly_chart(fig_spark, config={'staticPlot': True, 'displayModeBar': False})
-
-            with col_kpis:
-                kpi_col1, kpi_col2, kpi_col3 = st.columns(3)
-                with kpi_col1:
-                    st.metric("Выручка", format_k(row['Total_Sales'], currency))
-                with kpi_col2:
-                    st.metric("Заказы", f"{row['Orders']:,}")
-                with kpi_col3:
-                    discount_pct = row['Avg_Discount'] * 100
-                    st.metric("Скидка", f"{discount_pct:.1f}%",
-                              delta=f"{trend_direction} тренд" if len(trend_data) >= 3 else None,
-                              delta_color="normal")
-
-            # Разделитель между продуктами
-            if idx < len(top_15_products) - 1:
-                st.markdown('<hr style="margin: 5px 0; opacity: 0.3;">', unsafe_allow_html=True)
-
-    # ============================================
-    # ВАРИАНТ 3: Матрица продуктов
-    # ============================================
-    with view_tab3:
-        st.caption('🎯 X = Выручка, Y = Маржинальность, Размер = Кол-во заказов, Цвет = Категория')
-
-        category_colors = {
-            'Furniture': '#1a56db',
-            'Office Supplies': '#00CC96',
-            'Technology': '#EF553B'
-        }
-
-        # Берем топ-50 продуктов для матрицы (чтобы было информативно)
-        top_matrix = top_data.nlargest(50, 'Total_Sales')
-
-        fig_matrix = px.scatter(
-            top_matrix,
-            x='Total_Sales',
-            y='Margin %',
-            size='Orders',
-            color='Category',
-            color_discrete_map=category_colors,
-            hover_name='Product Name',
-            template=plotly_template,
-            labels={
-                'Total_Sales': 'Выручка',
-                'Margin %': 'Маржинальность %',
-                'Orders': 'Заказов'
-            },
-            hover_data={
-                'Total_Profit': ':.0f',
-                'Avg_Discount': ':.1%'
-            }
-        )
-
-        # Добавляем линии-разделители квадрантов
-        median_margin = top_matrix['Margin %'].median()
-        median_sales = top_matrix['Total_Sales'].median()
-
-        fig_matrix.add_hline(y=median_margin, line_dash="dash", line_color="gray", opacity=0.3,
-                             annotation_text=f"Медианная маржа: {median_margin:.1f}%")
-        fig_matrix.add_vline(x=median_sales, line_dash="dash", line_color="gray", opacity=0.3,
-                             annotation_text=f"Медианная выручка: {format_k(median_sales, currency)}")
-
-        # Аннотации квадрантов
-        max_x = top_matrix['Total_Sales'].max() * 0.95
-        max_y = top_matrix['Margin %'].max() * 0.95
-        min_y = top_matrix['Margin %'].min() * 0.95
-
-        annotations = [
-            dict(x=max_x, y=max_y, text="⭐ Звезды", showarrow=False, font=dict(color='#22c55e', size=12)),
-            dict(x=median_sales * 0.7, y=max_y, text="💎 Маржинальные", showarrow=False,
-                 font=dict(color='#3b82f6', size=12)),
-            dict(x=max_x, y=median_margin * 0.7, text="📦 Объемные", showarrow=False,
-                 font=dict(color='#f59e0b', size=12)),
-            dict(x=median_sales * 0.3, y=min_y * 0.7, text="🤔 Проблемные", showarrow=False,
-                 font=dict(color='#ef4444', size=12))
-        ]
-
-        fig_matrix.update_layout(
-            height=450,
-            annotations=annotations,
-            margin=dict(l=0, r=0, t=30, b=0),
-            legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
-            xaxis=dict(showgrid=True, gridcolor='rgba(128,128,128,0.1)'),
-            yaxis=dict(showgrid=True, gridcolor='rgba(128,128,128,0.1)')
-        )
-
-        # Выделяем топ-15 на матрице
-        top_15_names = top_15_products['Product Name'].tolist()
-        fig_matrix.add_trace(go.Scatter(
-            x=top_matrix[top_matrix['Product Name'].isin(top_15_names)]['Total_Sales'],
-            y=top_matrix[top_matrix['Product Name'].isin(top_15_names)]['Margin %'],
-            mode='markers',
-            marker=dict(size=15, color='rgba(0,0,0,0)', line=dict(color='gold', width=2)),
-            name='Топ-15',
-            hoverinfo='skip'
-        ))
-
-        st.plotly_chart(fig_matrix, width='stretch', config=plotly_config)
-
-        # Легенда квадрантов
-        col_q1, col_q2, col_q3, col_q4 = st.columns(4)
-        products_in_quadrants = {
-            '⭐ Звезды': len(
-                top_matrix[(top_matrix['Total_Sales'] > median_sales) & (top_matrix['Margin %'] > median_margin)]),
-            '💎 Маржинальные': len(
-                top_matrix[(top_matrix['Total_Sales'] <= median_sales) & (top_matrix['Margin %'] > median_margin)]),
-            '📦 Объемные': len(
-                top_matrix[(top_matrix['Total_Sales'] > median_sales) & (top_matrix['Margin %'] <= median_margin)]),
-            '🤔 Проблемные': len(
-                top_matrix[(top_matrix['Total_Sales'] <= median_sales) & (top_matrix['Margin %'] <= median_margin)])
-        }
-
-        for col, (label, count) in zip([col_q1, col_q2, col_q3, col_q4], products_in_quadrants.items()):
-            with col:
-                st.metric(label, f"{count} продуктов")
 
 with col2:
     with st.container(border=True, key="plot6"):
@@ -520,7 +315,7 @@ with col2:
         fig = px.bar(l10, x='Profit', y='Product Name', orientation='h', template=plotly_template,
                      color_discrete_sequence=['#EF553B'] * 10,
                      labels={'Profit': 'Прибыль', 'Product Name': ''})
-        fig.update_traces(text=l10['Profit'].apply(lambda x: f'{format_k(x, currency)}'), textposition='auto',
+        fig.update_traces(text=t10['Profit'].apply(lambda x: f'{format_k(x, currency)}'), textposition='auto',
                           textfont=dict(size=11))
         fig.update_layout(
             yaxis={'categoryorder': 'total descending', 'automargin': True, 'tickfont': dict(size=10), 'side': 'right'},
