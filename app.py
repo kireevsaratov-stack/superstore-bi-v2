@@ -296,7 +296,7 @@ with col1:
         fig = px.bar(t10, x='Sales', y='Product Name', orientation='h', template=plotly_template,
                      color='Sales', color_continuous_scale=[[0, '#e8f0ff'], [1, '#1a56db']],
                      labels={'Sales': 'Продажи', 'Product Name': ''})
-        fig.update_traces(text=t10['Sales'].apply(lambda x: f'{format_k(x, currency)}'), textposition='outside', textfont=dict(size=14))
+        fig.update_traces(text=t10['Sales'].apply(lambda x: f'{format_k(x, currency)}'), textposition='outside', textfont=dict(size=11))
         fig.update_layout(
             yaxis={'categoryorder': 'total ascending', 'automargin': True, 'tickfont': dict(size=10)},
             xaxis=dict(range=[0, t10['Sales'].max() * 1.15]),
@@ -310,7 +310,7 @@ with col2:
     with st.container(border=True, key="plot6"):
         st.markdown('##### Топ-10 убыточных продуктов')
         l10 = df.groupby('Product Name')['Profit'].sum().nsmallest(10).reset_index()
-        l10['Product Name'] = l10['Product Name'].apply(lambda x: x[:20] + '...' if len(x) > 20 else x)
+        l10['Product Name'] = l10['Product Name'].apply(lambda x: x[:30] + '...' if len(x) > 30 else x)
         fig = px.bar(l10, x='Profit', y='Product Name', orientation='h', template=plotly_template,
                      color_discrete_sequence=['#EF553B'] * 10,
                      labels={'Profit': 'Прибыль', 'Product Name': ''})
