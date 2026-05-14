@@ -294,7 +294,7 @@ with col1:
         t10 = df.groupby('Product Name')['Sales'].sum().nlargest(10).reset_index()
         t10['Product Name'] = t10['Product Name'].apply(lambda x: x[:30] + '...' if len(x) > 30 else x)
         fig = px.bar(t10, x='Sales', y='Product Name', orientation='h', template=plotly_template,
-                     color='Sales', color_continuous_scale=[[0, '#e8f0ff'], [1, '#1a56db']],
+                     color_discrete_sequence=['#1a56db'] * 10,
                      labels={'Sales': 'Продажи', 'Product Name': ''})
         fig.update_traces(text=t10['Sales'].apply(lambda x: f'{format_k(x, currency)}'), textposition='inside',
                           textfont=dict(size=11, color='white'))
