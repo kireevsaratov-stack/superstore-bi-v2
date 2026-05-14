@@ -69,6 +69,16 @@ st.markdown("""
     [data-testid="stToolbar"] {
         background-color: #ffffff !important;
     }
+    
+    /* Принудительно светлый фон для контейнеров графиков */
+    .stPlotlyChart {
+        background-color: #ffffff !important;
+    }
+    
+    /* Светлый фон для всех контейнеров с border */
+    [data-testid="stContainer"] {
+        background-color: #ffffff !important;
+    }
     h3, h5 { font-size: 14px; font-weight: 600; color: #1a1a1a; }
     
 </style>
