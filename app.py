@@ -448,9 +448,30 @@ with st.container(border=True, key="plot11"):
         ac = df['Sales'].sum() / df['Order ID'].nunique() if df['Order ID'].nunique() > 0 else 500
         fo = fs / ac
         c1, c2, c3 = st.columns(3)
-        c1.metric('Прогноз выручки', format_k(fs, currency))
-        c2.metric('Прогноз прибыли', format_k(fp, currency))
-        c3.metric('Прогноз заказов', f'{fo:,.0f}')
+
+        # Считаем факт 2017 для сравнения
+        df_2017 = df[df['Year'] == 2017]
+        if len(df_2017) > 0:
+            sales_2017 = df_2017['Sales'].sum()
+            profit_2017 = df_2017['Profit'].sum()
+            orders_2017 = df_2017['Order ID'].nunique()
+
+            # Дельты
+            sales_delta_forecast = fs - sales_2017
+            profit_delta_forecast = fp - profit_2017
+            orders_delta_forecast = fo - orders_2017
+        else:
+            sales_delta_forecast = profit_delta_forecast = orders_delta_forecast = None
+
+        with c1:
+            st.metric('Прогноз выручки', format_k(fs, currency),
+                      delta=format_k(sales_delta_forecast, currency) if sales_delta_forecast is not None else None)
+        with c2:
+            st.metric('Прогноз прибыли', format_k(fp, currency),
+                      delta=format_k(profit_delta_forecast, currency) if profit_delta_forecast is not None else None)
+        with c3:
+            st.metric('Прогноз заказов', f'{fo:,.0f}',
+                      delta=f'{orders_delta_forecast:+,.0f}' if orders_delta_forecast is not None else None)
         fig = go.Figure(layout=dict(template=plotly_template))
         fig.add_trace(go.Scatter(x=fd, y=fv, mode='lines', name='Прогноз', line=dict(color='#FFA500', width=2)))
         fig.add_trace(go.Scatter(x=pd.to_datetime(mp['Order Date']), y=mv, mode='markers+lines', name='История', line=dict(color='#00CC96', width=2)))
