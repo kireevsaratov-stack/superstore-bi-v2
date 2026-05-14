@@ -304,13 +304,15 @@ with col2:
                              marker_color=['#22c55e' if x > 0 else '#ef4444' for x in pareto_short['Profit']],
                              hovertemplate='Продукт #%{x}<br>Прибыль: %{y:,.0f}<extra></extra>'))
         fig.add_trace(go.Scatter(x=pareto_short['N'], y=pareto_short['Cumsum %'], mode='lines',
-                                 name='Накопительно %', yaxis='y2', line=dict(width=3, color='#636EFA')))
+                                 name='Накопительно %', yaxis='y2', line=dict(width=3, color='#636EFA'),
+                                 showlegend=False))
         fig.add_hline(y=80, line_dash="dash", opacity=0.5, line_color="gray", yref='y2')
         fig.update_layout(template=plotly_template, height=400, margin=dict(l=0, r=0, t=20, b=0),
                           xaxis=dict(title=f'Продукты (первые {products_80} из {len(pareto)})', showgrid=False),
                           yaxis=dict(title='Прибыль', showgrid=False),
-                          yaxis2=dict(title='Накопительный %', overlaying='y', side='right', range=[0, 100],
-                                     tickmode='linear', tick0=0, dtick=20, showgrid=False),
+                          yaxis2=dict(title=None, overlaying='y', side='right', range=[0, 100],
+                                     tickmode='linear', tick0=0, dtick=20, showgrid=False,
+                                     ticksuffix='%'),
                           legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1), bargap=0.3)
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 
