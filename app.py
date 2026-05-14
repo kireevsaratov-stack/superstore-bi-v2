@@ -224,7 +224,6 @@ with col1:
             legend=dict(orientation='h', yanchor='top', y=-0.2, xanchor='center', x=0.5)
         )
         st.plotly_chart(fig, width='stretch', config=plotly_config)
-        st.caption('Цветовая дифференциация по прибыльности категорий')
 
 with col2:
     with st.container(border=True, key="plot2"):
@@ -236,7 +235,7 @@ with col2:
         fig.update_traces(textinfo='label+percent parent', textfont=dict(size=12))
         fig.update_layout(height=400, margin=dict(l=0, r=0, t=20, b=0), showlegend=False, coloraxis_showscale=False)
         st.plotly_chart(fig, width='stretch', config=plotly_config)
-        st.caption('Цветовая дифференциация по прибыльности категорий')
+        st.caption('Цветовая дифференциация по прибыльности категорий: красный - убыток, зеленый - прибыль')
 
 # =========================================================
 # РЯД 2: Сезонность + Pareto
@@ -244,7 +243,7 @@ with col2:
 col1, col2 = st.columns(2)
 with col1:
     with st.container(border=True, key="plot3"):
-        st.markdown('##### Сезонность')
+        st.markdown('##### Сезонность продаж')
         hd = df.pivot_table(values='Sales', index='Month', columns='Year', aggfunc='sum')
         hd.index = [MONTH_NAMES[m] for m in hd.index]
         fig = px.imshow(hd, aspect='auto', color_continuous_scale=[[0, '#e8f0ff'], [1, '#1a56db']], template=plotly_template)
@@ -293,17 +292,17 @@ with col1:
     with st.container(border=True, key="plot5"):
         st.markdown('##### Топ-10 продуктов по выручке')
         t10 = df.groupby('Product Name')['Sales'].sum().nlargest(10).reset_index()
-        t10['Product Name'] = t10['Product Name'].apply(lambda x: x[:20] + '...' if len(x) > 20 else x)
+        t10['Product Name'] = t10['Product Name'].apply(lambda x: x[:30] + '...' if len(x) > 30 else x)
         fig = px.bar(t10, x='Sales', y='Product Name', orientation='h', template=plotly_template,
                      color='Sales', color_continuous_scale=[[0, '#e8f0ff'], [1, '#1a56db']],
                      labels={'Sales': 'Продажи', 'Product Name': ''})
-        fig.update_traces(text=t10['Sales'].apply(lambda x: f'{format_k(x, currency)}'), textposition='outside', textfont=dict(size=11))
+        fig.update_traces(text=t10['Sales'].apply(lambda x: f'{format_k(x, currency)}'), textposition='outside', textfont=dict(size=14))
         fig.update_layout(
             yaxis={'categoryorder': 'total ascending', 'automargin': True, 'tickfont': dict(size=10)},
             xaxis=dict(range=[0, t10['Sales'].max() * 1.15]),
             coloraxis_showscale=False,
             height=400,
-            margin=dict(l=5, r=10, t=20, b=0)
+            margin=dict(l=0, r=0, t=20, b=0)
         )
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 
@@ -335,29 +334,39 @@ with col1:
         st.markdown('##### Скидки vs Прибыль')
         dp = df.copy()
         disc_tab1, disc_tab2 = st.tabs(['График', 'Таблица'])
+
         with disc_tab1:
-            dp['Скидка группа'] = pd.cut(dp['Discount'], bins=[-0.01, 0.00, 0.20, 0.40, 0.60, 0.80],
-                                         labels=['0%', '0–20%', '20–40%', '40–60%', '60–80%'], include_lowest=True)
-            avg_line = dp.groupby('Скидка группа', observed=False).agg(Sales=('Sales', 'sum'), Profit=('Profit', 'sum'), Orders=('Order ID', 'nunique')).reset_index()
+            dp['Скидка группа'] = pd.cut(dp['Discount'], bins=[-0.01, 0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.80],
+                                         labels=['0%', '10%', '20%', '30%', '40%', '50%', '60%', '70%+'],
+                                         include_lowest=True)
+            avg_line = dp.groupby('Скидка группа', observed=False).agg(Sales=('Sales', 'sum'), Profit=('Profit', 'sum'),
+                                                                       Orders=('Order ID', 'nunique')).reset_index()
             avg_line['Рентабельность %'] = avg_line['Profit'] / avg_line['Sales'] * 100
             colors_line = ['#00CC96' if x > 0 else '#EF553B' for x in avg_line['Рентабельность %']]
             fig = go.Figure()
             fig.add_trace(go.Bar(x=avg_line['Скидка группа'], y=avg_line['Рентабельность %'], marker_color=colors_line,
-                                 text=avg_line['Рентабельность %'].apply(lambda x: f'{x:+.1f}%'), textposition='outside'))
+                                 text=avg_line['Рентабельность %'].apply(lambda x: f'{x:+.1f}%'),
+                                 textposition='outside'))
             fig.add_hline(y=0, line_dash="dash", line_color="#d1d5db", opacity=0.4)
-            fig.update_layout(height=400, xaxis=dict(title='Размер скидки'), yaxis=dict(title='Прибыль %', ticksuffix='%'),
+            fig.update_layout(height=400, xaxis=dict(title='Размер скидки'),
+                              yaxis=dict(title='Прибыль %', ticksuffix='%'),
                               margin=dict(l=0, r=0, t=20, b=0), template=plotly_template)
             st.plotly_chart(fig, width='stretch', config=plotly_config)
-            st.caption('С ростом скидки рентабельность падает. Группы 20–40% и выше — убыточны.')
+            st.caption('Шаг 10%. Динамика падения рентабельности при росте скидки.')
+
         with disc_tab2:
-            dp['Скидка группа'] = pd.cut(dp['Discount'], bins=[-0.01, 0.00, 0.20, 0.40, 0.60, 0.80],
-                                         labels=['0%', '0–20%', '20–40%', '40–60%', '60–80%'], include_lowest=True)
-            table_data = dp.groupby('Скидка группа', observed=False).agg(Выручка=('Sales', 'sum'), Прибыль=('Profit', 'sum'), Заказов=('Order ID', 'nunique')).reset_index()
+            dp['Скидка группа'] = pd.cut(dp['Discount'], bins=[-0.01, 0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.80],
+                                         labels=['0%', '10%', '20%', '30%', '40%', '50%', '60%', '70%+'],
+                                         include_lowest=True)
+            table_data = dp.groupby('Скидка группа', observed=False).agg(Выручка=('Sales', 'sum'),
+                                                                         Прибыль=('Profit', 'sum'),
+                                                                         Заказов=('Order ID', 'nunique')).reset_index()
             table_data['Рентабельность %'] = table_data['Прибыль'] / table_data['Выручка'] * 100
             table_data['Выручка'] = table_data['Выручка'].apply(lambda x: format_k(x, currency))
             table_data['Прибыль'] = table_data['Прибыль'].apply(lambda x: format_k(x, currency))
             table_data['Рентабельность %'] = table_data['Рентабельность %'].apply(lambda x: f'{x:+.1f}%')
-            st.markdown("<style>.st-key-plot7 table td, .st-key-plot7 table th {text-align:center!important;}</style>", unsafe_allow_html=True)
+            st.markdown("<style>.st-key-plot7 table td, .st-key-plot7 table th {text-align:center!important;}</style>",
+                        unsafe_allow_html=True)
             st.dataframe(table_data, use_container_width=True, hide_index=True)
 
 with col2:
@@ -372,8 +381,7 @@ with col2:
                              text=tc['Total_Sales'].apply(lambda x: f'{format_k(x, currency)}'), textposition='outside', textfont=dict(size=11)))
         fig.update_layout(yaxis={'categoryorder': 'total ascending'}, height=400, showlegend=False,
                           margin=dict(l=0, r=0, t=20, b=0), xaxis=dict(range=[0, tc['Total_Sales'].max() * 1.15]), template=plotly_template)
-        st.plotly_chart(fig, width='stretch', config=plotly_config)
-        st.caption('Красным — покупатели с отрицательной прибылью (убыток)')
+        st.plotly_chart(fig, width='stretch', config=plotly_config) st.caption('Зеленым выделены покупатели приносящие магазину прибыль, красным — убытки.')
 
 # =========================================================
 # РЯД 5: ПРОГНОЗ + БЭКТЕСТИНГ
@@ -407,11 +415,11 @@ with st.container(border=True, key="plot11"):
                           legend=dict(orientation='h', yanchor='top', y=-0.2, xanchor='center', x=0.5))
         st.plotly_chart(fig, width='stretch', config=plotly_config)
         st.markdown("""<div style="font-size:13px; color:#475569; line-height:1.7; margin-top:12px;">
-        <b>📘 Как работает прогноз:</b><br><br>
-        • Используется модель <b>Holt-Winters Exponential Smoothing</b> — статистический метод прогнозирования временных рядов.<br><br>
-        • Модель раскладывает историю продаж на три компонента: <b>тренд</b>, <b>сезонность</b> и <b>уровень</b>.<br><br>
-        • Обучается на данных за выбранные годы и предсказывает на 12 месяцев вперёд — на 2018 год.<br><br>
-        • Чем дальше горизонт прогноза — тем выше неопределённость. Модель не учитывает внешние факторы.<br><br>
+        <b>📘 Как работает прогноз:</b><br>
+        • Используется модель <b>Holt-Winters Exponential Smoothing</b> — статистический метод прогнозирования временных рядов.<br>
+        • Модель раскладывает историю продаж на три компонента: <b>тренд</b>, <b>сезонность</b> и <b>уровень</b>.<br>
+        • Обучается на данных за выбранные годы и предсказывает на 12 месяцев вперёд — на 2018 год.<br>
+        • Чем дальше горизонт прогноза — тем выше неопределённость. Модель не учитывает внешние факторы.<br>
         • Рекомендуется обновлять прогноз ежемесячно.
         </div>""", unsafe_allow_html=True)
         if len(mv) >= 24:
