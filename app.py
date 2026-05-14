@@ -304,8 +304,7 @@ with col2:
                              marker_color=['#22c55e' if x > 0 else '#ef4444' for x in pareto_short['Profit']],
                              hovertemplate='Продукт #%{x}<br>Прибыль: %{y:,.0f}<extra></extra>'))
         fig.add_trace(go.Scatter(x=pareto_short['N'], y=pareto_short['Cumsum %'], mode='lines',
-                                 name='Накопительно %', yaxis='y2', line=dict(width=3, color='#636EFA'),
-                                 showlegend=False))
+                                 name='Накопительно %', yaxis='y2', line=dict(width=3, color='#636EFA')))
         fig.add_hline(y=80, line_dash="dash", opacity=0.5, line_color="gray", yref='y2')
         fig.update_layout(template=plotly_template, height=400, margin=dict(l=0, r=0, t=20, b=0),
                           xaxis=dict(title=f'Продукты (первые {products_80} из {len(pareto)})', showgrid=False),
