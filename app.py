@@ -242,15 +242,21 @@ with col2:
 # =========================================================
 col1, col2 = st.columns(2)
 with col1:
-    with st.container(border=True, key="plot3"):
-        st.markdown('##### Сезонность продаж')
-        hd = df.pivot_table(values='Sales', index='Month', columns='Year', aggfunc='sum')
-        hd.index = [MONTH_NAMES[m] for m in hd.index]
-        fig = px.imshow(hd, aspect='auto', color_continuous_scale=[[0, '#e8f0ff'], [1, '#1a56db']], template=plotly_template)
-        fig.update_traces(text=[[f"{currency}{v/1000:,.0f}K" for v in r] for r in hd.values], texttemplate="%{text}", textfont=dict(size=11))
-        fig.update_xaxes(side='top', title='Год', tickformat='d', dtick=1)
-        fig.update_layout(height=400, margin=dict(l=0, r=0, t=20, b=0), coloraxis_showscale=True,
-                          coloraxis_colorbar=dict(title='Продажи', orientation='h', yanchor='bottom', y=-0.3, xanchor='center', x=0.5, len=0.8))
+    with st.container(border=True, key="plot5"):
+        st.markdown('##### Топ-15 продуктов по выручке')
+        t10 = df.groupby('Product Name')['Sales'].sum().nlargest(15).reset_index()
+        t10['Product Name'] = t10['Product Name'].apply(lambda x: x[:30] + '...' if len(x) > 30 else x)
+        fig = px.bar(t10, x='Sales', y='Product Name', orientation='h', template=plotly_template,
+                     color_discrete_sequence=['#1a56db'] * 15,
+                     labels={'Sales': 'Продажи', 'Product Name': ''})
+        fig.update_traces(text=t10['Sales'].apply(lambda x: f'{format_k(x, currency)}'), textposition='auto', textfont=dict(size=11, color='white'))
+        fig.update_layout(
+            yaxis={'categoryorder': 'total ascending', 'automargin': True, 'tickfont': dict(size=10)},
+            xaxis=dict(range=[0, t10['Sales'].max() * 1.15]),
+            coloraxis_showscale=False,
+            height=500,
+            margin=dict(l=0, r=0, t=20, b=0)
+        )
         st.plotly_chart(fig, width='stretch', config=plotly_config)
 
 with col2:
@@ -290,7 +296,7 @@ with col2:
 col1, col2 = st.columns(2)
 with col1:
     with st.container(border=True, key="plot5"):
-        st.markdown('##### Топ-10 продуктов по выручке')
+        st.markdown('##### Топ-15 продуктов по выручке')
         t10 = df.groupby('Product Name')['Sales'].sum().nlargest(15).reset_index()
         t10['Product Name'] = t10['Product Name'].apply(lambda x: x[:25] + '...' if len(x) > 25 else x)
         fig = px.bar(t10, x='Sales', y='Product Name', orientation='h', template=plotly_template,
@@ -309,7 +315,7 @@ with col1:
 
 with col2:
     with st.container(border=True, key="plot6"):
-        st.markdown('##### Топ-10 убыточных продуктов')
+        st.markdown('##### Топ-15 убыточных продуктов')
         l10 = df.groupby('Product Name')['Profit'].sum().nsmallest(15).reset_index()
         l10['Product Name'] = l10['Product Name'].apply(lambda x: x[:25] + '...' if len(x) > 25 else x)
         fig = px.bar(l10, x='Profit', y='Product Name', orientation='h', template=plotly_template,
