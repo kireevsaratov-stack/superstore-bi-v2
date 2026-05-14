@@ -296,7 +296,8 @@ with col1:
         fig = px.bar(t10, x='Sales', y='Product Name', orientation='h', template=plotly_template,
                      color='Sales', color_continuous_scale=[[0, '#e8f0ff'], [1, '#1a56db']],
                      labels={'Sales': 'Продажи', 'Product Name': ''})
-        fig.update_traces(text=t10['Sales'].apply(lambda x: f'{format_k(x, currency)}'), textposition='outside', textfont=dict(size=11))
+        fig.update_traces(text=t10['Sales'].apply(lambda x: f'{format_k(x, currency)}'), textposition='inside',
+                          textfont=dict(size=11, color='white'))
         fig.update_layout(
             yaxis={'categoryorder': 'total ascending', 'automargin': True, 'tickfont': dict(size=10)},
             xaxis=dict(range=[0, t10['Sales'].max() * 1.15]),
