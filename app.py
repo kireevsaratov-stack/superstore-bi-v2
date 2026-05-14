@@ -394,7 +394,7 @@ with col1:
                               yaxis=dict(title='Прибыль %', ticksuffix='%'),
                               margin=dict(l=0, r=0, t=20, b=0), template=plotly_template)
             st.plotly_chart(fig, width='stretch', config=plotly_config)
-            st.caption('Динамика падения рентабельности при росте скидки. Шаг 10%. ')
+            st.caption('Динамика падения рентабельности при росте скидки. Шаг 10%')
 
         with disc_tab2:
             dp['Скидка группа'] = pd.cut(dp['Discount'], bins=[-0.01, 0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.80],
@@ -424,7 +424,7 @@ with col2:
         fig.update_layout(yaxis={'categoryorder': 'total ascending'}, height=400, showlegend=False,
                           margin=dict(l=0, r=0, t=20, b=0), xaxis=dict(range=[0, tc['Total_Sales'].max() * 1.15]), template=plotly_template)
         st.plotly_chart(fig, width='stretch', config=plotly_config)
-        st.caption('Зеленым выделены покупатели приносящие магазину прибыль, красным — убытки.')
+        st.caption('Зеленым выделены покупатели, приносящие магазину прибыль, красным — убытки')
 
 # =========================================================
 # РЯД 5: ПРОГНОЗ + БЭКТЕСТИНГ
