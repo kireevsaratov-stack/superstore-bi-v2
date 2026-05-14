@@ -317,7 +317,7 @@ with col2:
         fig.update_traces(text=l10['Profit'].apply(lambda x: f'-{format_k(abs(x), currency)}'), textposition='outside',
                           textfont=dict(size=11))
         fig.update_layout(
-            yaxis={'categoryorder': 'total descending', 'automargin': True, 'tickfont': dict(size=10)},
+            yaxis={'categoryorder': 'total descending', 'automargin': True, 'tickfont': dict(size=10), 'side': 'right'},
             xaxis=dict(range=[l10['Profit'].min() * 1.15, 0], tickmode='array',
                        tickvals=[-8000, -6000, -4000, -2000, 0], ticktext=['-8K', '-6K', '-4K', '-2K', '0']),
             coloraxis_showscale=False,
