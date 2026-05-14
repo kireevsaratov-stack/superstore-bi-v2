@@ -311,7 +311,7 @@ with col2:
     with st.container(border=True, key="plot6"):
         st.markdown('##### Топ-10 убыточных продуктов')
         l10 = df.groupby('Product Name')['Profit'].sum().nsmallest(15).reset_index()
-        l10['Product Name'] = l10['Product Name'].apply(lambda x: x[:30] + '...' if len(x) > 30 else x)
+        l10['Product Name'] = l10['Product Name'].apply(lambda x: x[:25] + '...' if len(x) > 25 else x)
         fig = px.bar(l10, x='Profit', y='Product Name', orientation='h', template=plotly_template,
                      color_discrete_sequence=['#EF553B'] * 10,
                      labels={'Profit': 'Прибыль', 'Product Name': ''})
