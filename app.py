@@ -81,16 +81,7 @@ st.markdown("""
         background-color: #ffffff !important;
     }
     h3, h5 { font-size: 14px; font-weight: 600; color: #1a1a1a; }
-        /* Принудительно светлый фон для Plotly */
-    .stPlotlyChart > div > div {
-        background-color: #ffffff !important;
-    }
-    .plotly .main-svg {
-        background: #ffffff !important;
-    }
-    .js-plotly-plot {
-        background-color: #ffffff !important;
-    }
+    
 </style>
 """, unsafe_allow_html=True)
 
