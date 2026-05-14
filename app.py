@@ -70,13 +70,8 @@ st.markdown("""
         background-color: #ffffff !important;
     }
     
-    /* Скрываем кнопку переключения темы */
-    [data-testid="stApp"] button[kind="header"] {
-        display: none !important;
-    }
-    
-    /* Скрываем меню настроек */
-    #MainMenu {
+    /* Скрываем только кнопку переключения темы */
+    button[kind="header"] {
         display: none !important;
     }
     
