@@ -69,6 +69,21 @@ st.markdown("""
     [data-testid="stToolbar"] {
         background-color: #ffffff !important;
     }
+    
+    /* Скрываем кнопку переключения темы */
+    [data-testid="stApp"] button[kind="header"] {
+        display: none !important;
+    }
+    
+    /* Скрываем меню настроек */
+    #MainMenu {
+        display: none !important;
+    }
+    
+    /* Принудительно светлый фон для графиков */
+    .js-plotly-plot .plotly .main-svg {
+        background-color: #ffffff !important;
+    }
     h3, h5 { font-size: 14px; font-weight: 600; color: #1a1a1a; }
     
 </style>
@@ -165,25 +180,44 @@ if len(years) >= 2:
     selected_sorted = sorted(years)
     current_year = selected_sorted[-1]
     prev_year = selected_sorted[-2]
+
+    # Данные только за последний год
+    df_current = df[df['Year'] == current_year]
+    # Данные только за предпоследний год
     df_prev = df_raw[df_raw['Year'] == prev_year]
     if show_rub: df_prev = convert_to_rub(df_prev, rates)
-    if len(df_prev) > 0:
+
+    if len(df_current) > 0 and len(df_prev) > 0:
+        # Последний год
+        current_sales = df_current['Sales'].sum()
+        current_profit = df_current['Profit'].sum()
+        current_orders = df_current['Order ID'].nunique()
+        current_customers = df_current['Customer ID'].nunique()
+
+        # Предпоследний год
         prev_sales = df_prev['Sales'].sum()
         prev_profit = df_prev['Profit'].sum()
         prev_orders = df_prev['Order ID'].nunique()
         prev_customers = df_prev['Customer ID'].nunique()
-        sales_delta = sales_sum - prev_sales
-        profit_delta = profit_sum - prev_profit
-        orders_delta = orders - prev_orders
-        customers_delta = customers - prev_customers
+
+        # Дельты: последний год минус предпоследний
+        sales_delta = current_sales - prev_sales
+        profit_delta = current_profit - prev_profit
+        orders_delta = current_orders - prev_orders
+        customers_delta = current_customers - prev_customers
+
 
 def delta_html(value, currency='$'):
     if len(years) < 2: return ''
-    if value > 0: color, bg, arrow, sign = '#22c55e', '#f0fdf4', '↑', '+'
-    elif value < 0: color, bg, arrow, sign = '#ef4444', '#fef2f2', '↓', ''
-    else: return ''
+    if value > 0:
+        color, bg, arrow, sign = '#22c55e', '#f0fdf4', '↑', '+'
+    elif value < 0:
+        color, bg, arrow, sign = '#ef4444', '#fef2f2', '↓', ''
+    else:
+        return ''
     formatted = format_k(abs(value), currency) if abs(value) >= 1000 else f'{currency}{abs(value):,.0f}'
     return f'<span style="color:{color};background:{bg};padding:2px 8px;border-radius:4px;font-size:13px;">{arrow} {sign}{formatted}</span>'
+
 
 html_parts = ['<div class="year-summary">']
 for label, val, d, cur in [
