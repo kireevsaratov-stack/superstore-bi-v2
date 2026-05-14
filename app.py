@@ -381,7 +381,8 @@ with col2:
                              text=tc['Total_Sales'].apply(lambda x: f'{format_k(x, currency)}'), textposition='outside', textfont=dict(size=11)))
         fig.update_layout(yaxis={'categoryorder': 'total ascending'}, height=400, showlegend=False,
                           margin=dict(l=0, r=0, t=20, b=0), xaxis=dict(range=[0, tc['Total_Sales'].max() * 1.15]), template=plotly_template)
-        st.plotly_chart(fig, width='stretch', config=plotly_config) st.caption('Зеленым выделены покупатели приносящие магазину прибыль, красным — убытки.')
+        st.plotly_chart(fig, width='stretch', config=plotly_config)
+        st.caption('Зеленым выделены покупатели приносящие магазину прибыль, красным — убытки.')
 
 # =========================================================
 # РЯД 5: ПРОГНОЗ + БЭКТЕСТИНГ
