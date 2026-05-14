@@ -384,7 +384,7 @@ with st.container(border=True, key="plot5"):
                     mode='lines',
                     line=dict(color=trend_color, width=1.5),
                     fill='tozeroy',
-                    fillcolor=f'rgba{"(0,204,150" if trend_color == "#00CC96" else "(239,85,59)"}, 0.1)'
+                    fillcolor=f'rgba({"0,204,150" if trend_color == "#00CC96" else "239,85,59"}, 0.1)'
                 ))
                 fig_spark.update_layout(
                     height=30,
