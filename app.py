@@ -69,16 +69,6 @@ st.markdown("""
     [data-testid="stToolbar"] {
         background-color: #ffffff !important;
     }
-    
-    /* Скрываем только кнопку переключения темы */
-    button[kind="header"] {
-        display: none !important;
-    }
-    
-    /* Принудительно светлый фон для графиков */
-    .js-plotly-plot .plotly .main-svg {
-        background-color: #ffffff !important;
-    }
     h3, h5 { font-size: 14px; font-weight: 600; color: #1a1a1a; }
     
 </style>
