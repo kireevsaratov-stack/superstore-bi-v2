@@ -520,7 +520,7 @@ with col2:
         fig = px.bar(l10, x='Profit', y='Product Name', orientation='h', template=plotly_template,
                      color_discrete_sequence=['#EF553B'] * 10,
                      labels={'Profit': 'Прибыль', 'Product Name': ''})
-        fig.update_traces(text=t10['Profit'].apply(lambda x: f'{format_k(x, currency)}'), textposition='auto',
+        fig.update_traces(text=l10['Profit'].apply(lambda x: f'{format_k(x, currency)}'), textposition='auto',
                           textfont=dict(size=11))
         fig.update_layout(
             yaxis={'categoryorder': 'total descending', 'automargin': True, 'tickfont': dict(size=10), 'side': 'right'},
