@@ -2,14 +2,10 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.io as pio
 import requests
 import numpy as np
 from io import BytesIO
-import plotly.express as px
-import plotly.graph_objects as go
-import plotly.io as pio
-pio.templates.default = "plotly_white"   # ← вот эту строку
-
 from datetime import datetime, timedelta
 
 # =========================================================
@@ -85,7 +81,16 @@ st.markdown("""
         background-color: #ffffff !important;
     }
     h3, h5 { font-size: 14px; font-weight: 600; color: #1a1a1a; }
-    
+        /* Принудительно светлый фон для Plotly */
+    .stPlotlyChart > div > div {
+        background-color: #ffffff !important;
+    }
+    .plotly .main-svg {
+        background: #ffffff !important;
+    }
+    .js-plotly-plot {
+        background-color: #ffffff !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
