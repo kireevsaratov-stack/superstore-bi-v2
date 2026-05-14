@@ -292,7 +292,7 @@ with col1:
     with st.container(border=True, key="plot5"):
         st.markdown('##### Топ-10 продуктов по выручке')
         t10 = df.groupby('Product Name')['Sales'].sum().nlargest(15).reset_index()
-        t10['Product Name'] = t10['Product Name'].apply(lambda x: x[:30] + '...' if len(x) > 30 else x)
+        t10['Product Name'] = t10['Product Name'].apply(lambda x: x[:25] + '...' if len(x) > 25 else x)
         fig = px.bar(t10, x='Sales', y='Product Name', orientation='h', template=plotly_template,
                      color_discrete_sequence=['#1a56db'] * 10,
                      labels={'Sales': 'Продажи', 'Product Name': ''})
