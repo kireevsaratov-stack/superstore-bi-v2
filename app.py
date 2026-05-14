@@ -310,12 +310,16 @@ with col1:
 with col2:
     with st.container(border=True, key="plot6"):
         st.markdown('##### Топ-15 убыточных продуктов')
-        l10 = df.groupby('Product Name')['Profit'].sum().nsmallest(15).reset_index()
+        l10 = df.groupby('Product Name').agg(
+            Profit=('Profit', 'sum'),
+            Sales=('Sales', 'sum')
+        ).nsmallest(15, 'Profit').reset_index()
         l10['Product Name'] = l10['Product Name'].apply(lambda x: x[:25] + '...' if len(x) > 25 else x)
         fig = px.bar(l10, x='Profit', y='Product Name', orientation='h', template=plotly_template,
                      color_discrete_sequence=['#EF553B'] * 10,
                      labels={'Profit': 'Прибыль', 'Product Name': ''})
-        fig.update_traces(text=t10['Profit'].apply(lambda x: f'{format_k(x, currency)}'), textposition='auto',
+        fig.update_traces(text=l10['Profit'].apply(lambda x: f'{format_k(x, currency)}'),
+                          textposition='auto',
                           textfont=dict(size=11))
         fig.update_layout(
             yaxis={'categoryorder': 'total descending', 'automargin': True, 'tickfont': dict(size=10), 'side': 'right'},
