@@ -34,11 +34,15 @@ st.markdown("""
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid #e5e7eb;
+            padding: 4px 0 !important;
+            border-bottom: 1px solid #f1f5f9;
         }
-        .year-stat .value { font-size: 28px !important; }
-        .year-stat .label { font-size: 14px !important; }
+        .year-stat .value { font-size: 24px !important; }
+        .year-stat .label { font-size: 12px !important; }
+        .year-summary { 
+            gap: 0 !important; 
+            margin: 8px 0 12px 0 !important; 
+        }
     }
     .year-stat { text-align: center; }
     .year-stat .value { font-size: 42px; font-weight: 400; color: #1a1a1a; }    
@@ -53,36 +57,6 @@ st.markdown("""
         border-radius: 0 !important;
         padding: 12px 8px !important;
         margin-bottom: 0 !important;
-    }
-    
-        /* Стили для кнопок выбора годов */
-    [data-testid="stPills"] button {
-        border-radius: 6px !important;
-        padding: 4px 12px !important;
-        font-size: 14px !important;
-        border: 1px solid #d1d5db !important;
-        background-color: #f9fafb !important;
-        color: #374151 !important;
-        transition: all 0.2s ease !important;
-    }
-    
-    [data-testid="stPills"] button:hover {
-        background-color: #e5e7eb !important;
-        border-color: #9ca3af !important;
-    }
-    
-    /* Активная (выбранная) кнопка */
-    [data-testid="stPills"] button[aria-selected="true"] {
-        background-color: #1a56db !important;
-        color: white !important;
-        border-color: #1a56db !important;
-        font-weight: 500 !important;
-    }
-    
-    /* Убираем стандартную обводку при фокусе */
-    [data-testid="stPills"] button:focus {
-        box-shadow: 0 0 0 2px rgba(26, 86, 219, 0.3) !important;
-        outline: none !important;
     }
     /* Принудительная светлая тема для всех */
     [data-testid="stAppViewContainer"] {
