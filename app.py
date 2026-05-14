@@ -5,6 +5,11 @@ import plotly.graph_objects as go
 import requests
 import numpy as np
 from io import BytesIO
+import plotly.express as px
+import plotly.graph_objects as go
+import plotly.io as pio
+pio.templates.default = "plotly_white"   # ← вот эту строку
+
 from datetime import datetime, timedelta
 
 # =========================================================
