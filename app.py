@@ -69,6 +69,10 @@ st.markdown("""
         .st-key-plot6,.st-key-plot7,.st-key-plot8,.st-key-plot11,.st-key-plot12 {
             padding: 10px 10px;
         }
+
+        /* На телефоне графики статичны: касания не двигают/зумят график,
+           а прокручивают страницу. На десктопе (шире 768px) интерактив остаётся. */
+        [data-testid="stPlotlyChart"] { pointer-events: none; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -276,30 +280,28 @@ with col1:
 with col2:
     with st.container(border=True, key="plot4"):
         st.markdown('##### Парето: концентрация прибыли')
-        # ФИКС: принцип Парето считаем только по ПРИБЫЛЬНЫМ продуктам,
-        # иначе накопительный % искажается отрицательной прибылью.
         prod = df.groupby('Product Name')['Profit'].sum().sort_values(ascending=False).reset_index()
         pos = prod[prod['Profit'] > 0].copy()
         pos['Cum %'] = pos['Profit'].cumsum() / pos['Profit'].sum() * 100
         pos['N'] = range(1, len(pos) + 1)
         n80 = int((pos['Cum %'] <= 80).sum())
         loss = int((prod['Profit'] <= 0).sum())
-        head = pos.head(max(n80, 1))
+        # Обрезаем кривую по точке выхода на 80% — без длинного плоского хвоста.
+        head = pos.head(max(n80 + 1, 2))
 
+        # Вариант А: накопительная кривая концентрации до 80% (читается на любой ширине).
         fig = go.Figure()
-        fig.add_trace(go.Bar(x=head['N'], y=head['Profit'], name='Прибыль',
-                             marker_color=COLOR_PROFIT,
-                             hovertemplate='Продукт #%{x}<br>%{y:,.0f}<extra></extra>'))
-        fig.add_trace(go.Scatter(x=head['N'], y=head['Cum %'], name='Накопительно %',
-                                 yaxis='y2', line=dict(width=3, color='#1a56db')))
-        fig.add_hline(y=80, line_dash="dash", opacity=.5, line_color="gray", yref='y2')
+        fig.add_trace(go.Scatter(x=head['N'], y=head['Cum %'], mode='lines', fill='tozeroy',
+                                 line=dict(width=3, color=COLOR_SALES),
+                                 fillcolor='rgba(26,86,219,0.08)',
+                                 hovertemplate='Продукт #%{x}<br>накоплено %{y:.0f}% прибыли<extra></extra>'))
+        fig.add_hline(y=80, line_dash='dash', opacity=.6, line_color='gray',
+                      annotation_text='80% прибыли', annotation_position='top left')
         fig.update_layout(template=TEMPLATE, height=360, margin=dict(l=0, r=0, t=10, b=0),
-                          xaxis=dict(title=f'Топ-{len(head)} из {len(prod)} продуктов', showgrid=False),
-                          yaxis=dict(title='Прибыль', showgrid=False),
-                          yaxis2=dict(overlaying='y', side='right', range=[0, 100],
-                                      dtick=20, ticksuffix='%', showgrid=False),
-                          legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
-                          bargap=0.3)
+                          showlegend=False,
+                          xaxis=dict(title=f'Топ-{n80} продуктов (дают 80% прибыли)', showgrid=False),
+                          yaxis=dict(title='Накопленная прибыль', range=[0, 85], ticksuffix='%',
+                                     gridcolor='rgba(120,120,120,.12)'))
         st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
         _pct = n80 / len(prod) * 100 if len(prod) else 0
         st.caption(f"**Вывод:** {n80} продуктов из {len(prod)} (≈{_pct:.0f}%) дают 80% прибыли, "
@@ -377,7 +379,6 @@ with col1:
                               xaxis=dict(title='Размер скидки'),
                               yaxis=dict(title='Рентабельность', ticksuffix='%'))
             st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-            st.caption('Рентабельность падает с ростом скидки. Шаг 10%')
             # авто-вывод
             _neg = disc[disc['Рент. %'] < 0]['Группа']
             if len(_neg):
@@ -408,7 +409,6 @@ with col2:
                           height=360, showlegend=False, margin=dict(l=0, r=0, t=10, b=0),
                           xaxis=dict(range=[0, cs['Sales'].max() * 1.18]))
         st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-        st.caption('Зелёный — клиент приносит прибыль, красный — убыток')
         # авто-вывод
         _total_sales = df['Sales'].sum()
         _share = cs['Sales'].sum() / _total_sales * 100 if _total_sales else 0
@@ -420,113 +420,115 @@ with col2:
             st.caption(f"**Вывод:** топ-20 клиентов дают {_share:.0f}% выручки, и все они прибыльны.")
 
 # =========================================================
-# РЯД 4: СТРУКТУРА ПРОДАЖ — TREEMAP (площадь = выручка, цвет = маржа %)
+# РЯД 4: СТРУКТУРА (treemap) + ГЕОГРАФИЯ (бары + пузыри) — в одной строке
 # =========================================================
-with st.container(border=True, key="plot2"):
-    st.markdown('##### Структура продаж по категориям')
-    _c = df.groupby('Category').agg(S=('Sales', 'sum'), P=('Profit', 'sum')).reset_index()
-    _s = df.groupby(['Category', 'Sub-Category']).agg(
-        S=('Sales', 'sum'), P=('Profit', 'sum')).reset_index().rename(columns={'Sub-Category': 'Sub'})
+col1, col2 = st.columns(2)
+with col1:
+    with st.container(border=True, key="plot2"):
+        st.markdown('##### Структура продаж по категориям')
+        _c = df.groupby('Category').agg(S=('Sales', 'sum'), P=('Profit', 'sum')).reset_index()
+        _s = df.groupby(['Category', 'Sub-Category']).agg(
+            S=('Sales', 'sum'), P=('Profit', 'sum')).reset_index().rename(columns={'Sub-Category': 'Sub'})
 
-    ids, labels, parents, values, profits, margins = [], [], [], [], [], []
-    root_s, root_p = _c['S'].sum(), _c['P'].sum()
-    ids.append('Все'); labels.append('Все'); parents.append(''); values.append(root_s)
-    profits.append(root_p); margins.append(root_p / root_s * 100 if root_s else 0)
-    for r in _c.itertuples():
-        ids.append(r.Category); labels.append(r.Category); parents.append('Все')
-        values.append(r.S); profits.append(r.P); margins.append(r.P / r.S * 100 if r.S else 0)
-    for r in _s.itertuples():
-        ids.append(f'{r.Category}/{r.Sub}'); labels.append(r.Sub); parents.append(r.Category)
-        values.append(r.S); profits.append(r.P); margins.append(r.P / r.S * 100 if r.S else 0)
+        ids, labels, parents, values, profits, margins = [], [], [], [], [], []
+        root_s, root_p = _c['S'].sum(), _c['P'].sum()
+        ids.append('Все'); labels.append('Все'); parents.append(''); values.append(root_s)
+        profits.append(root_p); margins.append(root_p / root_s * 100 if root_s else 0)
+        for r in _c.itertuples():
+            ids.append(r.Category); labels.append(r.Category); parents.append('Все')
+            values.append(r.S); profits.append(r.P); margins.append(r.P / r.S * 100 if r.S else 0)
+        for r in _s.itertuples():
+            ids.append(f'{r.Category}/{r.Sub}'); labels.append(r.Sub); parents.append(r.Category)
+            values.append(r.S); profits.append(r.P); margins.append(r.P / r.S * 100 if r.S else 0)
 
-    lim = max(abs(min(margins)), abs(max(margins))) or 1
-    fig = go.Figure(go.Treemap(
-        ids=ids, labels=labels, parents=parents, values=values, branchvalues='total',
-        marker=dict(colors=margins, cmin=-lim, cmid=0, cmax=lim,
-                    colorscale=[[0, COLOR_LOSS], [0.5, '#f1f5f9'], [1, COLOR_PROFIT]],
-                    colorbar=dict(title='Маржа %', orientation='h', yanchor='top', y=-0.02,
-                                  xanchor='center', x=0.5, thickness=12, len=0.7)),
-        customdata=np.column_stack([profits, margins]),
-        texttemplate='%{label}<br>%{value:$,.0f}',
-        hovertemplate='%{label}<br>Выручка %{value:$,.0f}<br>Прибыль '
-                      '%{customdata[0]:$,.0f}<br>Маржа %{customdata[1]:.0f}%<extra></extra>',
-        textfont=dict(size=12), tiling=dict(pad=2)))
-    fig.update_layout(template=TEMPLATE, height=440, margin=dict(l=0, r=0, t=10, b=10))
-    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-    st.caption('Площадь — выручка, цвет — маржа % (красный = убыток). Тап по категории — детализация.')
-    # авто-вывод
-    _cm = _c.set_index('Category')
-    _cm['M'] = _cm['P'] / _cm['S'] * 100
-    _sub = df.groupby('Sub-Category')['Profit'].sum()
-    _losers = _sub[_sub < 0].sort_values().index.tolist()
-    if len(_cm):
-        _best = _cm['P'].idxmax()
-        _lowm = _cm['M'].idxmin()
-        if _losers:
-            st.caption(f"**Вывод:** больше всего прибыли даёт «{_best}», "
-                       f"а у «{_lowm}» маржа всего {_cm.loc[_lowm, 'M']:.0f}% — "
-                       f"её тянут вниз убыточные подкатегории: {', '.join(_losers[:3])}.")
+        lim = max(abs(min(margins)), abs(max(margins))) or 1
+        fig = go.Figure(go.Treemap(
+            ids=ids, labels=labels, parents=parents, values=values, branchvalues='total',
+            marker=dict(colors=margins, cmin=-lim, cmid=0, cmax=lim,
+                        colorscale=[[0, COLOR_LOSS], [0.5, '#f1f5f9'], [1, COLOR_PROFIT]],
+                        colorbar=dict(title='Маржа %', orientation='h', yanchor='top', y=-0.02,
+                                      xanchor='center', x=0.5, thickness=12, len=0.7)),
+            customdata=np.column_stack([profits, margins]),
+            texttemplate='%{label}<br>%{value:$,.0f}',
+            hovertemplate='%{label}<br>Выручка %{value:$,.0f}<br>Прибыль '
+                          '%{customdata[0]:$,.0f}<br>Маржа %{customdata[1]:.0f}%<extra></extra>',
+            textfont=dict(size=12), tiling=dict(pad=2)))
+        fig.update_layout(template=TEMPLATE, height=420, margin=dict(l=0, r=0, t=10, b=10))
+        st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
+        st.caption('Площадь — выручка, цвет — маржа % (красный = убыток). Тап по категории — детализация.')
+        # авто-вывод
+        _cm = _c.set_index('Category')
+        _cm['M'] = _cm['P'] / _cm['S'] * 100
+        _sub = df.groupby('Sub-Category')['Profit'].sum()
+        _losers = _sub[_sub < 0].sort_values().index.tolist()
+        if len(_cm):
+            _best = _cm['P'].idxmax()
+            _lowm = _cm['M'].idxmin()
+            if _losers:
+                st.caption(f"**Вывод:** больше всего прибыли даёт «{_best}», "
+                           f"а у «{_lowm}» маржа всего {_cm.loc[_lowm, 'M']:.0f}% — "
+                           f"её тянут вниз убыточные подкатегории: {', '.join(_losers[:3])}.")
+            else:
+                st.caption(f"**Вывод:** больше всего прибыли даёт «{_best}»; убыточных подкатегорий нет.")
+
+with col2:
+    with st.container(border=True, key="plot9"):
+        st.markdown('##### География: продажи и прибыль по штатам')
+        geo = df.groupby('State').agg(Sales=('Sales', 'sum'), Profit=('Profit', 'sum')).reset_index()
+        geo['Code'] = geo['State'].map(STATE_CODES)
+        geo = geo.dropna(subset=['Code'])
+
+        if geo.empty:
+            st.info('Нет данных по штатам для выбранных фильтров.')
         else:
-            st.caption(f"**Вывод:** больше всего прибыли даёт «{_best}»; убыточных подкатегорий нет.")
+            limit = max(abs(geo['Profit'].min()), abs(geo['Profit'].max())) or 1
+            tab_bar, tab_bub = st.tabs(['Бары', 'Пузыри'])
+
+            # --- Вкладка 1: горизонтальные бары (основная, удобна на смартфоне) ---
+            with tab_bar:
+                top = geo.nlargest(15, 'Sales').copy()
+                colors = [COLOR_PROFIT if p > 0 else COLOR_LOSS for p in top['Profit']]
+                fig = go.Figure(go.Bar(
+                    y=top['State'], x=top['Sales'], orientation='h', marker_color=colors,
+                    text=top['Sales'].apply(lambda x: format_k(x, currency)),
+                    textposition='outside', textfont=dict(size=11),
+                    customdata=top['Profit'],
+                    hovertemplate='%{y}<br>Выручка %{x:,.0f}<br>Прибыль %{customdata:,.0f}<extra></extra>'))
+                fig.update_layout(template=TEMPLATE, yaxis={'categoryorder': 'total ascending'},
+                                  height=420, showlegend=False, margin=dict(l=0, r=0, t=10, b=0),
+                                  xaxis=dict(range=[0, top['Sales'].max() * 1.18]))
+                st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
+                st.caption('Длина — выручка, цвет — прибыль (зелёный) или убыток (красный). Топ-15 штатов.')
+
+            # --- Вкладка 2: пузырьковая карта (размер = выручка, цвет = прибыль) ---
+            with tab_bub:
+                fig = px.scatter_geo(
+                    geo, locations='Code', locationmode='USA-states',
+                    size='Sales', color='Profit', scope='usa', size_max=26,
+                    color_continuous_scale=[[0, COLOR_LOSS], [0.5, '#f1f5f9'], [1, COLOR_PROFIT]],
+                    range_color=[-limit, limit], hover_name='State',
+                    hover_data={'Code': False, 'Sales': ':,.0f', 'Profit': ':,.0f'},
+                    labels={'Profit': 'Прибыль', 'Sales': 'Выручка'})
+                fig.update_layout(height=420, margin=dict(l=0, r=0, t=0, b=0),
+                                  coloraxis_colorbar=dict(title='Прибыль', orientation='h',
+                                                          yanchor='top', y=0, xanchor='center', x=0.5,
+                                                          thickness=12, len=0.7))
+                fig.update_geos(fitbounds='locations', visible=True, showland=True,
+                                landcolor='#f3f4f6', subunitcolor='#d1d5db', showsubunits=True)
+                st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
+                st.caption('Размер круга — выручка, цвет — прибыль (красный — убыток).')
+
+            # авто-вывод (общий для блока)
+            _best = geo.loc[geo['Profit'].idxmax(), 'State']
+            _loss_big = geo[geo['Profit'] < 0].nlargest(3, 'Sales')['State'].tolist()
+            if _loss_big:
+                st.caption(f"**Вывод:** больше всего прибыли приносит {_best}; "
+                           f"при этом {', '.join(_loss_big)} дают большие продажи, но убыточны.")
+            else:
+                st.caption(f"**Вывод:** больше всего прибыли приносит {_best}; убыточных штатов нет.")
 
 # =========================================================
-# РЯД 5: ГЕОГРАФИЯ ПО ШТАТАМ (вкладки: тепловая карта + бары)
-# =========================================================
-with st.container(border=True, key="plot9"):
-    st.markdown('##### География: продажи и прибыль по штатам')
-    geo = df.groupby('State').agg(Sales=('Sales', 'sum'), Profit=('Profit', 'sum')).reset_index()
-    geo['Code'] = geo['State'].map(STATE_CODES)
-    geo = geo.dropna(subset=['Code'])
-
-    if geo.empty:
-        st.info('Нет данных по штатам для выбранных фильтров.')
-    else:
-        tab_map, tab_bar = st.tabs(['Тепловая карта', 'Бары'])
-
-        # --- Вкладка 1: choropleth (хороша на десктопе) ---
-        with tab_map:
-            limit = max(abs(geo['Profit'].min()), abs(geo['Profit'].max()))
-            fig = px.choropleth(
-                geo, locations='Code', locationmode='USA-states', color='Profit',
-                scope='usa', color_continuous_scale=[[0, COLOR_LOSS], [0.5, '#f1f5f9'], [1, COLOR_PROFIT]],
-                range_color=[-limit, limit], hover_name='State',
-                hover_data={'Code': False, 'Sales': ':,.0f', 'Profit': ':,.0f'},
-                labels={'Profit': 'Прибыль', 'Sales': 'Выручка'})
-            fig.update_layout(height=440, margin=dict(l=0, r=0, t=10, b=10),
-                              geo=dict(bgcolor='rgba(0,0,0,0)', lakecolor='rgba(0,0,0,0)'),
-                              coloraxis_colorbar=dict(title='Прибыль', orientation='h',
-                                                      yanchor='top', y=-0.02, xanchor='center', x=0.5,
-                                                      thickness=12, len=0.7))
-            st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-            st.caption('Цвет — прибыль штата (красный — убыток). На телефоне удобнее вкладка «Бары».')
-
-        # --- Вкладка 2: горизонтальные бары (хороши на смартфоне) ---
-        with tab_bar:
-            top = geo.nlargest(15, 'Sales').copy()
-            colors = [COLOR_PROFIT if p > 0 else COLOR_LOSS for p in top['Profit']]
-            fig = go.Figure(go.Bar(
-                y=top['State'], x=top['Sales'], orientation='h', marker_color=colors,
-                text=top['Sales'].apply(lambda x: format_k(x, currency)),
-                textposition='outside', textfont=dict(size=11),
-                customdata=top['Profit'],
-                hovertemplate='%{y}<br>Выручка %{x:,.0f}<br>Прибыль %{customdata:,.0f}<extra></extra>'))
-            fig.update_layout(template=TEMPLATE, yaxis={'categoryorder': 'total ascending'},
-                              height=420, showlegend=False, margin=dict(l=0, r=0, t=10, b=0),
-                              xaxis=dict(range=[0, top['Sales'].max() * 1.18]))
-            st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-            st.caption('Длина — выручка, цвет — прибыль (зелёный) или убыток (красный). Топ-15 штатов.')
-
-        # авто-вывод (общий для блока)
-        _best = geo.loc[geo['Profit'].idxmax(), 'State']
-        _loss_big = geo[geo['Profit'] < 0].nlargest(3, 'Sales')['State'].tolist()
-        if _loss_big:
-            st.caption(f"**Вывод:** больше всего прибыли приносит {_best}; "
-                       f"при этом {', '.join(_loss_big)} дают большие продажи, но убыточны.")
-        else:
-            st.caption(f"**Вывод:** больше всего прибыли приносит {_best}; убыточных штатов нет.")
-
-# =========================================================
-# РЯД 6: ПРОГНОЗ (динамический год) + БЭКТЕСТИНГ
+# РЯД 5: ПРОГНОЗ (динамический год) + БЭКТЕСТИНГ
 # =========================================================
 with st.container(border=True, key="plot11"):
     try:
@@ -624,7 +626,7 @@ with st.container(border=True, key="plot11"):
         st.error(f'Не удалось построить прогноз: {e}')
 
 # =========================================================
-# РЯД 7: ЭКСПОРТ
+# РЯД 6: ЭКСПОРТ
 # =========================================================
 with st.container(border=True, key="plot12"):
     st.markdown('##### Экспорт данных')
