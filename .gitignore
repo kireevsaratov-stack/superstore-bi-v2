@@ -1,0 +1,23 @@
+# Окружение Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Системные файлы и IDE
+.DS_Store
+.idea/
+.vscode/
+
+# Streamlit: секреты никогда не коммитим
+.streamlit/secrets.toml
+
+# Claude Code: локальные разрешения
+.claude/settings.local.json
+
+# Локальные архивы и бэкапы — не для публичного репо
+archive/
+
+# Локальные заметки — не для публичного репо
+notes/
