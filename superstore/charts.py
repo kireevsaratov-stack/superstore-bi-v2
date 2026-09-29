@@ -30,9 +30,13 @@ def monthly_chart(m):
     n = len(m)
     step = 1 if n <= 12 else 2 if n <= 24 else 3 if n <= 36 else 4
     ticks = [m['Order Date'].iloc[i] for i in range(0, n, step)]
-    fig.update_layout(height=360, hovermode='x unified', margin=dict(l=0, r=0, t=10, b=30),
-                      xaxis=dict(tickmode='array', tickvals=ticks, ticktext=ticks, gridcolor=GRID),
-                      yaxis=dict(gridcolor=GRID), legend=LEGEND_BELOW)
+    # высота 385 (было 360): легенда опущена, и +25 px сохраняют прежнюю область графика
+    fig.update_layout(height=385, hovermode='x unified', margin=dict(l=0, r=0, t=10, b=30),
+                      # На телефоне подписи месяцев встают вертикально: automargin даёт им место,
+                      # а легенда опущена ниже, чтобы их не перекрывать.
+                      xaxis=dict(tickmode='array', tickvals=ticks, ticktext=ticks, gridcolor=GRID,
+                                 automargin=True),
+                      yaxis=dict(gridcolor=GRID), legend=dict(LEGEND_BELOW, y=-0.3))
     return fig
 
 
